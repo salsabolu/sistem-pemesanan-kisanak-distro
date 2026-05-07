@@ -9,8 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -20,7 +18,23 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->instance(\Laravel\Fortify\Contracts\LoginResponse::class, new class implements \Laravel\Fortify\Contracts\LoginResponse {
+            public function toResponse($request)
+            {
+                if ($request->user() && $request->user()->hasAnyRole(['pemilik', 'kasir'])) {
+                    return redirect()->intended('/dasbor');
+                }
+                
+                return redirect()->intended('/');
+            }
+        });
+
+        $this->app->instance(\Laravel\Fortify\Contracts\RegisterResponse::class, new class implements \Laravel\Fortify\Contracts\RegisterResponse {
+            public function toResponse($request)
+            {
+                return redirect()->intended('/');
+            }
+        });
     }
 
     /**
@@ -47,30 +61,19 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::loginView(fn () => redirect()->route('home')->with('openLogin', true));
 
-        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
-            'email' => $request->email,
-            'token' => $request->route('token'),
-        ]));
+        Fortify::registerView(fn () => redirect()->route('home')->with('openRegister', true));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/ForgotPassword', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::requestPasswordResetLinkView(fn () => redirect()->route('home')->with('openLogin', true));
 
-        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::resetPasswordView(fn () => redirect()->route('home')->with('openLogin', true));
 
-        Fortify::registerView(fn () => Inertia::render('auth/Register'));
+        Fortify::verifyEmailView(fn () => redirect()->route('home')->with('openLogin', true));
 
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
+        Fortify::twoFactorChallengeView(fn () => redirect()->route('home')->with('openLogin', true));
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
+        Fortify::confirmPasswordView(fn () => redirect()->route('home')->with('openLogin', true));
     }
 
     /**

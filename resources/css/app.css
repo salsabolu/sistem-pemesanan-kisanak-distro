@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@import url('https://fonts.googleapis.com/css2?family=Neue+Montreal:wght@400;500;700&display=swap');
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -9,7 +11,7 @@
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'Neue Montreal', Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -17,7 +19,7 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
-    --color-background: var(--background);
+    --color-background: var(--white);
     --color-foreground: var(--foreground);
 
     --color-card: var(--card);
@@ -59,6 +61,16 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Kisanak Brand Colors for Tailwind */
+    --color-black: var(--black);
+    --color-white: var(--white);
+    --color-white-hover: var(--white-hover);
+    --color-white-disable: var(--white-disable);
+    --color-orange: var(--orange);
+    --color-yellow: var(--yellow);
+    --color-red: var(--red);
+    --color-green: var(--green);
 }
 
 /*
@@ -124,6 +136,16 @@
     --sidebar-border: hsl(0 0% 91%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
     --sidebar: hsl(0 0% 98%);
+
+    /* Kisanak Brand Colors */
+    --black: #1F1B1E;
+    --white: #FCFCF7;
+    --white-hover: #D2D2CE;
+    --white-disable: #8E8E8B;
+    --orange: #E77817;
+    --yellow: #F9DA05;
+    --red: #CE3837;
+    --green: #607657;
 }
 
 .dark {
