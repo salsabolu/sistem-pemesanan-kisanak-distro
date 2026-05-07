@@ -43,9 +43,10 @@ class PesananController extends Controller
             ->update(['status' => 'Dalam Produksi']);
 
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
-            ->where('status', 'Dalam Produksi')
+            ->where('status', '=', 'Dalam Produksi', 'and')
             ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end") // Priority Scheduling
             ->orderBy('tenggat_waktu', 'asc') // Earliest Due Date
+            ->orderBy('created_at', 'asc') // Tie-breaker: earlier orders first
             ->paginate(10);
 
         return Inertia::render('produksi/AntreanProduksi', [

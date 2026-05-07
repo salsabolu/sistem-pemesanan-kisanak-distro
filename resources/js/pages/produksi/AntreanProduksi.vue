@@ -14,6 +14,7 @@ type PesananDB = {
     catatan: string | null;
     status: string;
     estimasi_selesai: string | null;
+    created_at?: string | null;
     pembeli?: { id: number; nama: string; whatsapp: string };
     produk?: {
         id: number; nama: string;
@@ -44,6 +45,7 @@ const items = computed(() => {
     return props.pesanan.data.map((p, idx) => ({
         id: p.id,
         no: (currentPage.value - 1) * (props.pesanan?.per_page ?? 10) + idx + 1,
+        jamMasuk: formatTime(p.created_at ?? null),
         nama: p.pembeli?.nama ?? '-',
         whatsapp: p.pembeli?.whatsapp ?? '-',
         produkNama: p.produk?.nama?.toUpperCase() ?? '-',
@@ -68,6 +70,13 @@ function formatDate(value: string | null): string {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+function formatTime(value: string | null): string {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(d);
 }
 
 function updatePrioritas(item: any, event: Event) {
@@ -134,6 +143,7 @@ function paginationPages(): (number | string)[] {
                     <thead>
                         <tr class="bg-white-hover/50">
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">No</th>
+                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Jam Masuk</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
                                 <span class="inline-flex items-center gap-1">
                                     Pembeli
@@ -156,11 +166,12 @@ function paginationPages(): (number | string)[] {
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="9" class="px-3 py-6 text-center text-black/50">Belum ada pesanan dalam
+                            <td colspan="10" class="px-3 py-6 text-center text-black/50">Belum ada pesanan dalam
                                 produksi.</td>
                         </tr>
                         <tr v-for="item in items" :key="item.id" class="border-t border-black/5">
                             <td class="px-3 py-3 text-black">{{ item.no }}</td>
+                            <td class="px-3 py-3 text-black">{{ item.jamMasuk }}</td>
                             <td class="px-3 py-3">
                                 <div class="flex items-center gap-2">
                                     <div
