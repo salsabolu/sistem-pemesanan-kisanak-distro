@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { ref, onMounted, watch } from 'vue';
 import {
     PhCheckSquare,
     PhClipboard,
     PhCube,
     PhList,
 } from '@phosphor-icons/vue';
-import Sidebar from '@/components/Sidebar.vue';
+import { ref, onMounted, watch } from 'vue';
 import InfoCard from '@/components/InfoCard.vue';
-import { Bold } from 'lucide-vue-next';
+import Sidebar from '@/components/Sidebar.vue';
 
 type TopBuyer = {
     id: number;

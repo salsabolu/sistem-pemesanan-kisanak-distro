@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Head, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
 
 type PesananDB = {
     id: number;

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
 import {
     PhMagnifyingGlass,
     PhShoppingCartSimple,
     PhUserCircle,
 } from '@phosphor-icons/vue';
+import { ref, computed, watch } from 'vue';
+import CartDrawer from '@/components/CartDrawer.vue';
+import CataloguePreview from '@/components/CataloguePreview.vue';
+import Footer from '@/components/Footer.vue';
+import LoginModal from '@/components/LoginModal.vue';
 import NavButton from '@/components/NavButton.vue';
 import NavIcon from '@/components/NavIcon.vue';
-import SearchBar from '@/components/SearchBar.vue';
-import CataloguePreview from '@/components/CataloguePreview.vue';
-import LoginModal from '@/components/LoginModal.vue';
 import RegisterModal from '@/components/RegisterModal.vue';
-import CartDrawer from '@/components/CartDrawer.vue';
-import Footer from '@/components/Footer.vue';
+import SearchBar from '@/components/SearchBar.vue';
 
 type ProdukDB = {
     id: number; nama: string; harga_min: number | string; harga_max: number | string; stok: number; stok_minimum: number;

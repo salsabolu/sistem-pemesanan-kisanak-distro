@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
     PhMagnifyingGlass,
     PhShoppingCartSimple,
     PhUserCircle,
 } from '@phosphor-icons/vue';
-import NavIcon from '@/components/NavIcon.vue';
-import CtaButton from '@/components/CtaButton.vue';
+import { computed, ref, watch } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
+import CtaButton from '@/components/CtaButton.vue';
 import LoginModal from '@/components/LoginModal.vue';
+import NavIcon from '@/components/NavIcon.vue';
 import RegisterModal from '@/components/RegisterModal.vue';
 
 type ProdukData = {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref, onMounted } from 'vue';
 import {
     PhMagnifyingGlass,
     PhShoppingCartSimple,
@@ -8,11 +7,11 @@ import {
     PhTrash,
     PhInfo,
 } from '@phosphor-icons/vue';
-import NavButton from '@/components/NavButton.vue';
-import NavIcon from '@/components/NavIcon.vue';
-import LoginModal from '@/components/LoginModal.vue';
-import RegisterModal from '@/components/RegisterModal.vue';
+import { computed, ref, onMounted } from 'vue';
 import Footer from '@/components/Footer.vue';
+import LoginModal from '@/components/LoginModal.vue';
+import NavIcon from '@/components/NavIcon.vue';
+import RegisterModal from '@/components/RegisterModal.vue';
 
 type CartItem = {
     id: string;
@@ -113,16 +112,6 @@ const totalValue = computed(() => {
 });
 
 const totalText = computed(() => formatRupiah(totalValue.value));
-
-function formatDateInput(value: string): string {
-    if (!value) return '-';
-    const parts = value.split('-');
-    if (parts.length !== 3) return value;
-    const [yyyy, mm, dd] = parts;
-    return `${dd}-${mm}-${yyyy}`;
-}
-
-const orderDeadlineText = computed(() => formatDateInput(deadline.value));
 
 function formatDateDb(value: string | null): string {
     if (!value) return '-';

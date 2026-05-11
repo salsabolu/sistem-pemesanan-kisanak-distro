@@ -24,15 +24,15 @@ class FortifyServiceProvider extends ServiceProvider
                 if ($request->user() && $request->user()->hasAnyRole(['pemilik', 'kasir'])) {
                     return redirect()->intended('/dasbor');
                 }
-                
-                return redirect()->intended('/');
+
+                return redirect()->intended('/dashboard');
             }
         });
 
         $this->app->instance(\Laravel\Fortify\Contracts\RegisterResponse::class, new class implements \Laravel\Fortify\Contracts\RegisterResponse {
             public function toResponse($request)
             {
-                return redirect()->intended('/');
+                return redirect()->intended('/dashboard');
             }
         });
     }

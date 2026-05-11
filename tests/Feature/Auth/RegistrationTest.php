@@ -13,14 +13,16 @@ class RegistrationTest extends TestCase
     {
         $response = $this->get(route('register'));
 
-        $response->assertOk();
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('openRegister', true);
     }
 
     public function test_new_users_can_register()
     {
         $response = $this->post(route('register.store'), [
-            'name' => 'Test User',
+            'nama' => 'Test User',
             'email' => 'test@example.com',
+            'whatsapp' => '081234567890',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);

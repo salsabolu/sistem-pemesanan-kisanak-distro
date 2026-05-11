@@ -16,7 +16,8 @@ class PasswordResetTest extends TestCase
     {
         $response = $this->get(route('password.request'));
 
-        $response->assertOk();
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('openLogin', true);
     }
 
     public function test_reset_password_link_can_be_requested()
@@ -41,7 +42,8 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
             $response = $this->get(route('password.reset', $notification->token));
 
-            $response->assertOk();
+            $response->assertRedirect(route('home'));
+            $response->assertSessionHas('openLogin', true);
 
             return true;
         });

@@ -34,14 +34,19 @@ class DasborController extends Controller
         $daysInMonth = $startDate->daysInMonth;
         $chartData = array_fill(0, $daysInMonth, 0);
 
-        $salesPerDay = Pesanan::whereBetween('created_at', [$startDate, $endDate], 'and', false)
+        $salesRows = Pesanan::whereBetween('created_at', [$startDate, $endDate], 'and', false)
             ->where('status', '!=', 'Dibatalkan', 'and')
-            ->selectRaw('EXTRACT(DAY FROM created_at) as day, SUM(jumlah) as total')
-            ->groupBy('day')
+            ->select('created_at', 'jumlah')
             ->get();
 
-        foreach ($salesPerDay as $sale) {
-            $chartData[$sale->day - 1] = (int) $sale->total;
+        $salesPerDay = [];
+        foreach ($salesRows as $row) {
+            $day = Carbon::parse($row->created_at)->day;
+            $salesPerDay[$day] = ($salesPerDay[$day] ?? 0) + (int) $row->jumlah;
+        }
+
+        foreach ($salesPerDay as $day => $total) {
+            $chartData[$day - 1] = $total;
         }
 
         // 6. Top Buyers for the selected month

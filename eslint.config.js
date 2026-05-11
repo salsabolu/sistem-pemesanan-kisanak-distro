@@ -10,6 +10,12 @@ export default defineConfigWithVueTs(
         ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', 'vite.config.ts', 'resources/js/components/ui/*'],
     },
     {
+        files: ['scripts/**/*.cjs'],
+        rules: {
+            '@typescript-eslint/no-require-imports': 'off',
+        },
+    },
+    {
         plugins: {
             import: importPlugin,
         },

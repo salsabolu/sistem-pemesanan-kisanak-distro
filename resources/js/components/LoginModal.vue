@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { PhEye, PhEyeSlash } from '@phosphor-icons/vue';
 import { useForm } from '@inertiajs/vue3';
+import { PhEye, PhEyeSlash } from '@phosphor-icons/vue';
+import { ref } from 'vue';
 
 interface Props {
     open: boolean;

@@ -11,6 +11,7 @@ use App\Http\Controllers\PesananController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\KeranjangController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\DasborController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -37,9 +38,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/profil/ubah-kata-sandi', [ProfilController::class, 'updatePassword'])->name('profil.update-password');
 });
 
-use App\Http\Controllers\DasborController;
-
-Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DasborController::class, 'index'])->name('dashboard');
+    Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
+});
 
 Route::get('/produksi/stok-menipis', [ProdukController::class, 'stokMenipis'])->name('produksi.stok-menipis');
 

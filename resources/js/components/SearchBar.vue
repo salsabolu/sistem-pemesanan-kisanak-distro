@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
 import { PhMagnifyingGlass, PhX } from '@phosphor-icons/vue';
+import { ref, nextTick } from 'vue';
 
 const props = defineProps<{
     modelValue?: string;

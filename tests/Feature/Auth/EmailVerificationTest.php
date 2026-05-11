@@ -19,7 +19,8 @@ class EmailVerificationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
-        $response->assertOk();
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('openLogin', true);
     }
 
     public function test_email_can_be_verified()

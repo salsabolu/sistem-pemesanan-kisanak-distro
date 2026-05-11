@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import Sidebar from '../../components/Sidebar.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
 import {
     PhTrash,
 } from '@phosphor-icons/vue';
+import { ref, computed } from 'vue';
+import Sidebar from '../../components/Sidebar.vue';
 
 type ProdukData = {
     id: number; nama: string; satuan: string; harga: number; stok: number;
@@ -216,11 +216,13 @@ const ukuranList = computed(() => props.ukuran ?? []);
                 <template v-for="(link, idx) in paginationLinks" :key="idx">
                     <Link v-if="link.url" :href="link.url"
                         class="min-w-[32px] h-8 px-2 text-sm border flex items-center justify-center"
-                        :class="link.active ? 'border-black bg-black text-white' : 'border-black/20 bg-white text-black hover:bg-black/5'"
-                        v-html="link.label" />
+                        :class="link.active ? 'border-black bg-black text-white' : 'border-black/20 bg-white text-black hover:bg-black/5'">
+                        <span v-html="link.label" />
+                    </Link>
                     <span v-else
-                        class="min-w-[32px] h-8 px-2 text-sm border border-black/10 bg-white text-black/30 flex items-center justify-center"
-                        v-html="link.label" />
+                        class="min-w-[32px] h-8 px-2 text-sm border border-black/10 bg-white text-black/30 flex items-center justify-center">
+                        <span v-html="link.label" />
+                    </span>
                 </template>
             </div>
         </main>

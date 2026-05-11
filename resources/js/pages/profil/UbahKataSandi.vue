@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     PhMagnifyingGlass,
     PhShoppingCartSimple,
     PhUserCircle,
 } from '@phosphor-icons/vue';
-import NavIcon from '@/components/NavIcon.vue';
-import LoginModal from '@/components/LoginModal.vue';
-import RegisterModal from '@/components/RegisterModal.vue';
+import { ref } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
 import Footer from '@/components/Footer.vue';
+import LoginModal from '@/components/LoginModal.vue';
+import NavIcon from '@/components/NavIcon.vue';
+import RegisterModal from '@/components/RegisterModal.vue';
 
 const form = useForm({
     current_password: '',
