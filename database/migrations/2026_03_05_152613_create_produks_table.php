@@ -32,7 +32,7 @@ return new class extends Migration
         Schema::create('produk', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('id_kategori');
-            $table->unsignedInteger('id_warna');
+            $table->unsignedInteger('id_warna')->nullable();
             $table->unsignedInteger('id_ukuran');
             $table->string('nama', 255);
             $table->string('satuan', 255);

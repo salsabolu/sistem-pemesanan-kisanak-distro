@@ -23,10 +23,6 @@ return new class extends Migration
             $table->foreign('id_pesanan')->references('id')->on('pesanan')->cascadeOnDelete();
             $table->unique('id_pesanan');
         });
-
-        Schema::table('pesanan', function (Blueprint $table) {
-            $table->foreign('id_pembayaran')->references('id')->on('pembayaran')->nullOnDelete();
-        });
     }
 
     /**
@@ -34,10 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pesanan', function (Blueprint $table) {
-            $table->dropForeign(['id_pembayaran']);
-        });
-
         Schema::dropIfExists('pembayaran');
     }
 };
