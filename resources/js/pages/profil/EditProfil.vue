@@ -182,7 +182,7 @@ function handleEdit() {
                         <div class="flex justify-end">
                             <button type="submit" :disabled="form.processing"
                                 class="border border-black px-6 py-2 text-sm text-black hover:bg-black/5 disabled:opacity-50">
-                                Edit
+                                Simpan Perubahan
                             </button>
                         </div>
                     </form>

@@ -21,15 +21,15 @@ interface GalleryItem {
 }
 
 const galleryItems: GalleryItem[] = [
-    { src: '/images/beranda-1.jpg', caption: 'Cetak DTF Meteran' },
-    { src: '/images/beranda-2.jpg', caption: 'Cetak DTF Raster' },
-    { src: '/images/beranda-3.jpg', caption: 'Cetak DTF Warna Bebas' },
-    { src: '/images/beranda-1.jpg', caption: 'Sablon Kaos Kelas' },
-    { src: '/images/beranda-2.jpg', caption: 'Sablon pada Hoodie' },
-    { src: '/images/beranda-3.jpg', caption: 'Sablon pada Kaos Polo' },
-    { src: '/images/beranda-1.jpg', caption: 'Sablon pada Jersey' },
-    { src: '/images/beranda-2.jpg', caption: 'Sablon Kaos Satuan' },
-    { src: '/images/beranda-3.jpg', caption: 'Sablon Raster pada Kaos' },
+    { src: '/images/galeri-1.jpg', caption: 'Cetak DTF Meteran' },
+    { src: '/images/galeri-2.jpg', caption: 'Cetak DTF Raster' },
+    { src: '/images/galeri-3.jpg', caption: 'Cetak DTF Warna Bebas' },
+    { src: '/images/galeri-4.jpg', caption: 'Sablon Kaos Kelas' },
+    { src: '/images/galeri-5.jpg', caption: 'Sablon pada Hoodie' },
+    { src: '/images/galeri-6.jpg', caption: 'Sablon pada Kaos Polo' },
+    { src: '/images/galeri-7.jpg', caption: 'Sablon pada Jersey' },
+    { src: '/images/galeri-8.jpg', caption: 'Sablon Kaos Satuan' },
+    { src: '/images/galeri-9.jpg', caption: 'Sablon Raster pada Kaos' },
 ];
 
 const isProfileMenuOpen = ref(false);
