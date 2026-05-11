@@ -46,7 +46,7 @@ class PesananController extends Controller
             ->where('status', '=', 'Dalam Produksi', 'and')
             ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end") // Priority Scheduling
             ->orderBy('tenggat_waktu', 'asc') // Earliest Due Date
-            ->orderBy('created_at', 'asc') // Tie-breaker: earlier orders first
+            ->orderBy('created_at', 'asc') // FCFS: First Come First Served
             ->paginate(10);
 
         return Inertia::render('produksi/AntreanProduksi', [

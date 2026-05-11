@@ -25,14 +25,14 @@ class FortifyServiceProvider extends ServiceProvider
                     return redirect()->intended('/dasbor');
                 }
 
-                return redirect()->intended('/dashboard');
+                return redirect()->intended('/');
             }
         });
 
         $this->app->instance(\Laravel\Fortify\Contracts\RegisterResponse::class, new class implements \Laravel\Fortify\Contracts\RegisterResponse {
             public function toResponse($request)
             {
-                return redirect()->intended('/dashboard');
+                return redirect()->intended('/');
             }
         });
     }

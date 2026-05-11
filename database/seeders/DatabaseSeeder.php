@@ -18,31 +18,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $owner = User::firstOrCreate(
-            ['email' => 'pemilik@mail.com'],
+            ['email' => 'pemilik@example.com'],
             [
                 'nama' => 'Pemilik',
                 'password' => Hash::make('password'),
-                'whatsapp' => '080000000001',
+                'no_whatsapp' => '080000000001',
                 'alamat' => null,
             ]
         );
 
         if (! $owner->hasRole('pemilik')) {
             $owner->assignRole('pemilik');
-        }
-
-        $kasir = User::firstOrCreate(
-            ['email' => 'kasir@mail.com'],
-            [
-                'nama' => 'Kasir',
-                'password' => Hash::make('password'),
-                'whatsapp' => '080000000002',
-                'alamat' => null,
-            ]
-        );
-
-        if (! $kasir->hasRole('kasir')) {
-            $kasir->assignRole('kasir');
         }
     }
 }
