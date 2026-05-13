@@ -189,7 +189,7 @@ function paginationPages(): (number | string)[] {
                         </tr>
                         <tr v-for="item in items" :key="item.id" class="border-t border-black/5 cursor-pointer hover:bg-black/5"
                             @click="openDetail(item)">
-                            <td class="px-4 py-3 text-black">{{ item.no }}</td>
+                            <td class="px-4 py-3 text-black text-sm">{{ item.no }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <div
@@ -205,7 +205,7 @@ function paginationPages(): (number | string)[] {
                             <td class="px-4 py-3">
                                 <div class="text-black text-sm font-medium uppercase">{{ item.produkText }}</div>
                             </td>
-                            <td class="px-4 py-3 text-black">{{ item.totalHarga }}</td>
+                            <td class="px-4 py-3 text-black text-sm">{{ item.totalHarga }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <a v-if="item.buktiPembayaran" :href="buktiUrl(item.buktiPembayaran)"
@@ -252,8 +252,8 @@ function paginationPages(): (number | string)[] {
                     style="box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15)">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <div class="text-black text-sm font-medium uppercase">Detail Produk</div>
-                            <div class="mt-1 text-black/50 text-xs">ID Pesanan: {{ selectedItem?.pesananId ?? '-' }}</div>
+                            <div class="text-black text-sm font-medium uppercase">Detail Pesanan</div>
+                            <div class="mt-1 text-black/50 text-xs">ID: {{ selectedItem?.pesananId ?? '-' }}</div>
                         </div>
                         <button type="button" class="px-4 py-2 text-sm border border-black" @click="closeDetail">Tutup</button>
                     </div>
@@ -261,14 +261,14 @@ function paginationPages(): (number | string)[] {
                     <div class="mt-4 divide-y divide-black/10">
                         <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
                             <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
-                            <div class="mt-1 text-black/50 text-xs uppercase">
-                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
+                            <div class="mt-1 text-black/50 text-xs uppercase">WARNA: 
+                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
                             </div>
-                            <div class="mt-1 text-black text-xs">
-                                {{ prod.pivot?.jumlah ?? 0 }} /
+                            <div class="mt-1 text-black text-xs">JUMLAH: 
+                                {{ prod.pivot?.jumlah ?? 0 }} / HARGA: 
                                 {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
                             </div>
-                            <div class="mt-1 text-black text-xs">{{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
+                            <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
                         </div>
                         <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
                             Tidak ada produk.

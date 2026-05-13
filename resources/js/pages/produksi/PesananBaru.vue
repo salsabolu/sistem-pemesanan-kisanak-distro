@@ -9,6 +9,7 @@ type PesananDB = {
     total: number;
     prioritas: string;
     status: string;
+    created_at?: string | null;
     pembeli?: { id: number; nama: string; whatsapp: string };
     produk?: Array<{
         id: number; nama: string;
@@ -68,6 +69,7 @@ const items = computed(() => {
             id: p.id,
             pembayaranId: p.pembayaran?.id ?? null,
             no: (currentPage.value - 1) * (props.pesanan?.per_page ?? 10) + idx + 1,
+            jamMasuk: formatTime(p.created_at ?? null),
             avatarInitial: (p.pembeli?.nama ?? '?')[0].toUpperCase(),
             nama: p.pembeli?.nama ?? '-',
             whatsapp: p.pembeli?.whatsapp ?? '-',
@@ -82,6 +84,13 @@ const items = computed(() => {
 
 function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(Math.max(0, Math.round(value)))}`;
+}
+
+function formatTime(value: string | null): string {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(d);
 }
 
 
@@ -136,6 +145,7 @@ function paginationPages(): (number | string)[] {
                     <thead>
                         <tr class="bg-white-hover/50">
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">No</th>
+                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Jam Masuk</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
                                 <span class="inline-flex items-center gap-1">
                                     Pembeli
@@ -155,11 +165,12 @@ function paginationPages(): (number | string)[] {
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="6" class="px-3 py-6 text-center text-black/50">Belum ada pesanan baru.</td>
+                            <td colspan="7" class="px-3 py-6 text-center text-black/50">Belum ada pesanan baru.</td>
                         </tr>
                         <tr v-for="item in items" :key="item.id" class="border-t border-black/5 cursor-pointer hover:bg-black/5"
                             @click="openDetail(item)">
-                            <td class="px-3 py-3 text-black">{{ item.no }}</td>
+                            <td class="px-3 py-3 text-black text-sm">{{ item.no }}</td>
+                            <td class="px-3 py-3 text-black text-sm">{{ item.jamMasuk }}</td>
                             <td class="px-3 py-3">
                                 <div class="flex items-center gap-2">
                                     <div
@@ -175,8 +186,8 @@ function paginationPages(): (number | string)[] {
                             <td class="px-3 py-3">
                                 <div class="text-black text-sm font-medium uppercase">{{ item.produkText }}</div>
                             </td>
-                            <td class="px-3 py-3 text-black">{{ item.jumlah }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.totalHarga }}</td>
+                            <td class="px-3 py-3 text-black text-sm">{{ item.jumlah }}</td>
+                            <td class="px-3 py-3 text-black text-sm">{{ item.totalHarga }}</td>
                             <td class="px-3 py-3">
                                 <select class="px-3 py-1 rounded-full text-xs" :class="pembayaranColor(item.statusPembayaran)"
                                     :value="item.statusPembayaran"
@@ -217,14 +228,14 @@ function paginationPages(): (number | string)[] {
                     <div class="mt-4 divide-y divide-black/10">
                         <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
                             <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
-                            <div class="mt-1 text-black/50 text-xs uppercase">
-                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
+                            <div class="mt-1 text-black/50 text-xs uppercase">WARNA: 
+                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
                             </div>
-                            <div class="mt-1 text-black text-xs">
-                                {{ prod.pivot?.jumlah ?? 0 }} /
+                            <div class="mt-1 text-black text-xs">JUMLAH: 
+                                {{ prod.pivot?.jumlah ?? 0 }} / HARGA: 
                                 {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
                             </div>
-                            <div class="mt-1 text-black text-xs">{{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
+                            <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
                         </div>
                         <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
                             Tidak ada produk.

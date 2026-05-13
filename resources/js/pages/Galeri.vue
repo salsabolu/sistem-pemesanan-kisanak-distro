@@ -27,8 +27,8 @@ const galleryItems: GalleryItem[] = [
     { src: '/images/galeri-5.jpg', caption: 'Sablon pada Hoodie' },
     { src: '/images/galeri-6.jpg', caption: 'Sablon pada Kaos Polo' },
     { src: '/images/galeri-7.jpg', caption: 'Sablon pada Jersey' },
-    { src: '/images/galeri-8.jpg', caption: 'Sablon Kaos Satuan' },
-    { src: '/images/galeri-9.jpg', caption: 'Sablon Raster pada Kaos' },
+    { src: '/images/galeri-8.jpg', caption: 'Detail Hasil Cetak DTF' },
+    { src: '/images/galeri-9.jpg', caption: 'Detail Warna Cetak DTF' },
 ];
 
 const isProfileMenuOpen = ref(false);

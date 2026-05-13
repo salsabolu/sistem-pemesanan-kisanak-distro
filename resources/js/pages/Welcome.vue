@@ -120,16 +120,16 @@ watch(
         <main class="flex-1 mx-auto w-full px-30 pb-16 pt-6">
             <!-- 1 Main Picture -->
             <section class="mb-4">
-                <img src="/images/beranda-1.jpg" alt="Beranda" class="w-full object-cover" style="height: 460px" />
+                <img src="/images/beranda-1.jpg" alt="Beranda" class="w-full object-cover border border-black" style="height: 460px" />
             </section>
 
             <!-- 2 Pictures + Tagline + CTA Button -->
             <section class="mb-4 flex gap-4">
                 <div class="w-1/3 h-105 overflow-hidden">
-                    <img src="/images/beranda-2.jpg" alt="Gambar 2" class="h-full w-full object-cover" />
+                    <img src="/images/beranda-2.jpg" alt="Gambar 2" class="h-full w-full object-cover border border-black" />
                 </div>
                 <div class="w-1/3 h-105 overflow-hidden">
-                    <img src="/images/beranda-3.jpg" alt="Gambar 3" class="h-full w-full object-cover" />
+                    <img src="/images/beranda-3.jpg" alt="Gambar 3" class="h-full w-full object-cover border border-black" />
                 </div>
                 <section class="max-w-1/3">
                     <h1 class="font-medium leading-tight" style="font-size: 30px; color: black">
@@ -174,7 +174,7 @@ watch(
                         </p>
                     </span>
                 </section>
-                <img src="/images/beranda-1.jpg" alt="Beranda" class="w-2/3 h-105 object-cover" />
+                <img src="/images/beranda-4.png" alt="Beranda" class="w-2/3 h-105 object-cover border border-black" />
             </section>
         </main>
 

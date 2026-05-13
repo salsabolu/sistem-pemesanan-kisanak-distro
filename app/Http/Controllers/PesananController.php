@@ -45,6 +45,7 @@ class PesananController extends Controller
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
             ->where('status', '=', 'Dalam Produksi', 'and')
             ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end") // Priority Scheduling
+            ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
             ->orderBy('created_at', 'asc') // FCFS: First Come First Served
             ->paginate(10);
 

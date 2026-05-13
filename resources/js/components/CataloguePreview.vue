@@ -29,7 +29,7 @@ function goToDetail(id: number) {
                     </div>
 
                     <div class="aspect-square w-full overflow-hidden">
-                        <img :src="item.imageSrc" :alt="item.name" class="h-full w-full object-cover" />
+                        <img :src="item.imageSrc" :alt="item.name" class="h-full w-full object-cover border border-black" />
                     </div>
                 </div>
 

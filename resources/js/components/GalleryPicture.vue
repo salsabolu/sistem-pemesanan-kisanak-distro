@@ -14,7 +14,7 @@ const props = defineProps<Props>();
             <img
                 :src="props.src"
                 :alt="props.alt ?? props.caption"
-                class="h-full w-full object-cover"
+                class="h-full w-full object-cover border border-black"
             />
         </div>
         <figcaption class="text-black text-12px font-normal uppercase mt-1">
