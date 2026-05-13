@@ -50,19 +50,34 @@ const ordersGrouped = computed(() => {
     for (const p of props.pesanan.data) {
         const date = formatDate(p.created_at);
         if (!groups[date]) groups[date] = [];
+
+        const products = (p.produk ?? []).map((pr: any, idx: number) => {
+            const qty = (pr?.pivot?.jumlah ?? 0) as number;
+            const subtotal = (pr?.pivot?.subtotal ?? 0) as number;
+
+            const imageSrc = pr?.gambar && pr.gambar !== '-' ? pr.gambar : '/images/kaos-1.png';
+            const imageAlt = pr?.nama ?? '-';
+
+            return {
+                key: `${pr?.id ?? 'p'}-${idx}`,
+                imageSrc,
+                imageAlt,
+                productName: pr?.nama ?? '-',
+                color: pr?.warna?.nama ?? '-',
+                size: pr?.ukuran?.nama ?? '-',
+                quantity: qty,
+                unitPriceText: formatRupiah(subtotal / Math.max(1, qty)),
+                subtotalText: formatRupiah(subtotal),
+            };
+        });
+
         groups[date].push({
             id: p.id,
-            imageSrc: p.produk?.gambar && p.produk.gambar !== '-' ? p.produk.gambar : '/images/kaos-1.png', // Fallback image
-            productName: p.produk?.nama ?? '-',
-            color: p.produk?.warna?.nama ?? '-',
-            size: p.produk?.ukuran?.nama ?? '-',
-            quantity: p.jumlah,
-            unitPriceText: formatRupiah((p.total_harga ?? 0) / Math.max(1, p.jumlah)),
-            totalText: formatRupiah(p.total_harga ?? 0),
-            deadlineText: formatDate(p.tenggat_waktu),
-            noteText: p.catatan ?? '-',
+            products,
+            totalText: formatRupiah(p.total ?? 0),
             status: p.status,
-            estimatedFinish: formatDate(p.estimasi_selesai),
+            deadlineText: formatDate(p.tenggat_waktu ?? null),
+            estimatedFinish: formatDate(p.estimasi_selesai ?? null),
         });
     }
     return Object.keys(groups).map(date => ({
@@ -172,33 +187,38 @@ function closeRegister() {
                         <div class="text-black text-sm font-bold">{{ group.date }}</div>
 
                         <div v-for="item in group.items" :key="item.id" class="mt-4 border-b border-black/10 pb-6">
-                            <div class="grid grid-cols-[160px_1fr_auto] gap-6">
-                                <!-- Product Image -->
-                                <div class="aspect-square w-40 overflow-hidden">
-                                    <img :src="item.imageSrc" :alt="item.productName"
-                                        class="h-full w-full object-cover" />
-                                </div>
-
-                                <!-- Product Info -->
+                            <div class="grid grid-cols-[1fr_auto] gap-6">
                                 <div class="min-w-0">
-                                    <div class="text-black text-sm font-medium uppercase leading-snug">
-                                        {{ item.productName }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs uppercase">
-                                        {{ item.color.toUpperCase() }} / {{ item.size.toUpperCase() }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs">
-                                        {{ item.quantity }} / {{ item.unitPriceText }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs">
-                                        {{ item.totalText }}
+                                    <div class="grid gap-4">
+                                        <div v-for="prod in item.products" :key="prod.key"
+                                            class="grid grid-cols-[160px_1fr] gap-6">
+                                            <div class="aspect-square w-40 overflow-hidden">
+                                                <img :src="prod.imageSrc" :alt="prod.imageAlt"
+                                                    class="h-full w-full object-cover" />
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                <div class="text-black text-sm font-medium uppercase leading-snug">
+                                                    {{ prod.productName }}
+                                                </div>
+                                                <div class="mt-1 text-black text-xs uppercase">
+                                                    {{ String(prod.color).toUpperCase() }} / {{ String(prod.size).toUpperCase() }}
+                                                </div>
+                                                <div class="mt-1 text-black text-xs">
+                                                    {{ prod.quantity }} / {{ prod.unitPriceText }}
+                                                </div>
+                                                <div class="mt-1 text-black text-xs">
+                                                    {{ prod.subtotalText }}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="mt-6 text-black/60 text-xs uppercase">
-                                        Tenggat Waktu: {{ item.deadlineText }}
-                                    </div>
-                                    <div class="mt-1 text-black/60 text-xs uppercase">
-                                        Catatan: {{ item.noteText }}
+                                    <div class="mt-4 pt-4 border-t border-black/10">
+                                        <div class="text-black text-xs">{{ item.totalText }}</div>
+                                        <div class="mt-2 text-black/60 text-xs uppercase">
+                                            Tenggat Waktu: {{ item.deadlineText }}
+                                        </div>
                                     </div>
                                 </div>
 

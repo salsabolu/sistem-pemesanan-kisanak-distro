@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
 
 type PesananDB = {
     id: number;
     id_pembeli: number;
-    id_produk: number;
-    jumlah: number;
-    total_harga: number;
+    total: number;
     prioritas: string;
-    tenggat_waktu: string | null;
-    catatan: string | null;
     status: string;
-    estimasi_selesai: string | null;
     pembeli?: { id: number; nama: string; whatsapp: string };
-    produk?: {
+    produk?: Array<{
         id: number; nama: string;
         warna?: { nama: string }; ukuran?: { nama: string };
-    };
+        pivot?: { jumlah: number; subtotal: number };
+    }>;
     pembayaran?: { id: number; status: string } | null;
 };
 
@@ -49,37 +45,45 @@ const pembayaranOptionsAllowed = computed(() => {
 const currentPage = computed(() => props.pesanan?.current_page ?? 1);
 const totalPages = computed(() => props.pesanan?.last_page ?? 1);
 
+const isDetailOpen = ref(false);
+const selectedItem = ref<any>(null);
+
+function openDetail(item: any) {
+    selectedItem.value = item;
+    isDetailOpen.value = true;
+}
+
+function closeDetail() {
+    isDetailOpen.value = false;
+    selectedItem.value = null;
+}
+
 const items = computed(() => {
     if (!props.pesanan?.data) return [];
-    return props.pesanan.data.map((p, idx) => ({
-        id: p.id,
-        pembayaranId: p.pembayaran?.id ?? null,
-        no: (currentPage.value - 1) * (props.pesanan?.per_page ?? 10) + idx + 1,
-        avatarInitial: (p.pembeli?.nama ?? '?')[0].toUpperCase(),
-        nama: p.pembeli?.nama ?? '-',
-        whatsapp: p.pembeli?.whatsapp ?? '-',
-        produkNama: p.produk?.nama?.toUpperCase() ?? '-',
-        produkVariasi: `${(p.produk?.warna?.nama ?? '-').toUpperCase()} / ${(p.produk?.ukuran?.nama ?? '-').toUpperCase()}`,
-        jumlah: p.jumlah,
-        totalHarga: formatRupiah(p.total_harga),
-        tenggatWaktu: formatDate(p.tenggat_waktu),
-        statusPembayaran: (p.pembayaran?.status ?? 'Menunggu') as 'Menunggu' | 'Belum Konfirmasi' | 'Terkonfirmasi',
-        estimasiSelesai: formatDate(p.estimasi_selesai),
-    }));
+    return props.pesanan.data.map((p, idx) => {
+        const produkCount = (p.produk ?? []).length;
+        const totalQty = (p.produk ?? []).reduce((sum, pr) => sum + (pr.pivot?.jumlah ?? 0), 0);
+
+        return {
+            id: p.id,
+            pembayaranId: p.pembayaran?.id ?? null,
+            no: (currentPage.value - 1) * (props.pesanan?.per_page ?? 10) + idx + 1,
+            avatarInitial: (p.pembeli?.nama ?? '?')[0].toUpperCase(),
+            nama: p.pembeli?.nama ?? '-',
+            whatsapp: p.pembeli?.whatsapp ?? '-',
+            produkText: produkCount > 0 ? `${produkCount} Produk` : '-',
+            jumlah: totalQty,
+            totalHarga: formatRupiah(p.total),
+            statusPembayaran: (p.pembayaran?.status ?? 'Menunggu') as 'Menunggu' | 'Belum Konfirmasi' | 'Terkonfirmasi',
+            produk: p.produk ?? [],
+        };
+    });
 });
 
 function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(Math.max(0, Math.round(value)))}`;
 }
 
-function formatDate(value: string | null): string {
-    if (!value) return '-';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return value;
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    return `${dd}-${mm}-${d.getFullYear()}`;
-}
 
 function updatePembayaranStatus(item: any, event: Event) {
     if (!item.pembayaranId) return;
@@ -145,18 +149,16 @@ function paginationPages(): (number | string)[] {
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Produk</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Jumlah</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Total Harga</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Tenggat Waktu</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Status Pembayaran
-                            </th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Estimasi Selesai
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="8" class="px-3 py-6 text-center text-black/50">Belum ada pesanan baru.</td>
+                            <td colspan="6" class="px-3 py-6 text-center text-black/50">Belum ada pesanan baru.</td>
                         </tr>
-                        <tr v-for="item in items" :key="item.id" class="border-t border-black/5">
+                        <tr v-for="item in items" :key="item.id" class="border-t border-black/5 cursor-pointer hover:bg-black/5"
+                            @click="openDetail(item)">
                             <td class="px-3 py-3 text-black">{{ item.no }}</td>
                             <td class="px-3 py-3">
                                 <div class="flex items-center gap-2">
@@ -171,21 +173,19 @@ function paginationPages(): (number | string)[] {
                                 </div>
                             </td>
                             <td class="px-3 py-3">
-                                <div class="text-black text-sm font-medium uppercase">{{ item.produkNama }}</div>
-                                <div class="text-black/50 text-xs uppercase">{{ item.produkVariasi }}</div>
+                                <div class="text-black text-sm font-medium uppercase">{{ item.produkText }}</div>
                             </td>
                             <td class="px-3 py-3 text-black">{{ item.jumlah }}</td>
                             <td class="px-3 py-3 text-black">{{ item.totalHarga }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.tenggatWaktu }}</td>
                             <td class="px-3 py-3">
                                 <select class="px-3 py-1 rounded-full text-xs" :class="pembayaranColor(item.statusPembayaran)"
                                     :value="item.statusPembayaran"
                                     :disabled="!item.pembayaranId || (isKasir && item.statusPembayaran === 'Terkonfirmasi')"
+                                    @click.stop
                                     @change="updatePembayaranStatus(item, $event)">
                                     <option v-for="opt in pembayaranOptionsAllowed" :key="opt" :value="opt">{{ opt }}</option>
                                 </select>
                             </td>
-                            <td class="px-3 py-3 text-black">{{ item.estimasiSelesai }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -199,6 +199,43 @@ function paginationPages(): (number | string)[] {
                     :disabled="typeof page === 'string'" @click="typeof page === 'number' && goToPage(page)">
                     {{ page }}
                 </button>
+            </div>
+
+            <!-- Detail Modal -->
+            <div v-if="isDetailOpen" class="fixed inset-0 z-50 flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/40" @click="closeDetail" />
+                <div class="relative bg-white text-black p-6 w-full max-w-lg mx-4"
+                    style="box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15)">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <div class="text-black text-sm font-medium uppercase">Detail Pesanan</div>
+                            <div class="mt-1 text-black/50 text-xs">ID: {{ selectedItem?.id ?? '-' }}</div>
+                        </div>
+                        <button type="button" class="px-4 py-2 text-sm border border-black" @click="closeDetail">Tutup</button>
+                    </div>
+
+                    <div class="mt-4 divide-y divide-black/10">
+                        <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
+                            <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
+                            <div class="mt-1 text-black/50 text-xs uppercase">
+                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
+                            </div>
+                            <div class="mt-1 text-black text-xs">
+                                {{ prod.pivot?.jumlah ?? 0 }} /
+                                {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
+                            </div>
+                            <div class="mt-1 text-black text-xs">{{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
+                        </div>
+                        <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
+                            Tidak ada produk.
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <div class="uppercase">Total:</div>
+                        <div>{{ selectedItem?.totalHarga ?? '-' }}</div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>

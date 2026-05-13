@@ -7,7 +7,7 @@ import { ref, computed } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
 
 type ProdukData = {
-    id: number; nama: string; satuan: string; harga: number; stok: number;
+    id: number; nama: string; harga: number; stok: number;
     stok_minimum: number; durasi_produksi: number; durasi_restok: number;
     deskripsi: string | null; gambar: string | null; status: string;
     id_kategori: number; id_warna: number | null; id_ukuran: number;
@@ -30,7 +30,7 @@ const gambarFile = ref<File | null>(null);
 const gambarPreview = ref<string | null>(null);
 
 const form = useForm({
-    id_kategori: '', id_warna: '', id_ukuran: '', nama: '', satuan: '',
+    id_kategori: '', id_warna: '', id_ukuran: '', nama: '',
     harga: 0, stok: 0, stok_minimum: 0, durasi_produksi: 0, durasi_restok: 0,
     deskripsi: '', status: 'Aktif',
 });
@@ -73,7 +73,7 @@ function openTambah() {
 function openEdit(item: ProdukData) {
     editingItem.value = item; form.clearErrors();
     form.id_kategori = String(item.id_kategori); form.id_warna = item.id_warna ? String(item.id_warna) : '';
-    form.id_ukuran = String(item.id_ukuran); form.nama = item.nama; form.satuan = item.satuan;
+    form.id_ukuran = String(item.id_ukuran); form.nama = item.nama;
     form.harga = item.harga; form.stok = item.stok; form.stok_minimum = item.stok_minimum;
     form.durasi_produksi = item.durasi_produksi; form.durasi_restok = item.durasi_restok;
     form.deskripsi = item.deskripsi ?? '';
@@ -91,7 +91,6 @@ function submitForm() {
     fd.append('id_warna', form.id_warna);
     fd.append('id_ukuran', form.id_ukuran);
     fd.append('nama', form.nama);
-    fd.append('satuan', form.satuan);
     fd.append('harga', String(form.harga));
     fd.append('stok', String(form.stok));
     fd.append('stok_minimum', String(form.stok_minimum));
@@ -123,7 +122,7 @@ function deleteItem(item: ProdukData) {
 function statusColor(s: string) { return s === 'Aktif' ? 'bg-green text-white' : 'bg-red text-white'; }
 
 const fallback = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1, nama: 'KAOS POLOS DEWASA...', satuan: '1', harga: 40000, stok: 5, stok_minimum: 5,
+    id: i + 1, nama: 'KAOS POLOS DEWASA...', harga: 40000, stok: 5, stok_minimum: 5,
     durasi_produksi: 5, durasi_restok: 1440, deskripsi: null, gambar: null,
     status: i === 9 ? 'Non-Aktif' : 'Aktif', id_kategori: 1, id_warna: 1, id_ukuran: 3,
     warna: { id: 1, nama: 'PUTIH' }, ukuran: { id: 3, nama: 'M' },
@@ -163,7 +162,6 @@ const ukuranList = computed(() => props.ukuran ?? []);
                                     </svg>
                                 </span>
                             </th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Satuan</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Harga</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok Minimum</th>
@@ -189,7 +187,6 @@ const ukuranList = computed(() => props.ukuran ?? []);
                                 <div class="text-black/50 text-xs uppercase">{{ item.warna?.nama ?? '' }} / {{
                                     item.ukuran?.nama ?? '' }}</div>
                             </td>
-                            <td class="px-3 py-3 text-black">{{ item.satuan }}</td>
                             <td class="px-3 py-3 text-black">Rp{{ Number(item.harga).toLocaleString('id-ID') }}</td>
                             <td class="px-3 py-3 text-black">{{ item.stok }}</td>
                             <td class="px-3 py-3 text-black">{{ item.stok_minimum }}</td>
@@ -267,12 +264,6 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <option value="" disabled>Pilih ukuran</option>
                             <option v-for="u in ukuranList" :key="u.id" :value="String(u.id)">{{ u.nama }}</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Satuan <span class="text-red-500">*</span></label>
-                        <input v-model="form.satuan" type="text"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
                     </div>
                     <div>
                         <label class="block text-black text-sm mb-1">Harga <span class="text-red-500">*</span></label>

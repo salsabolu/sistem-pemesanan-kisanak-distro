@@ -14,17 +14,24 @@ return new class extends Migration
         Schema::create('pesanan', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedBigInteger('id_pembeli');
-            $table->unsignedInteger('id_produk');
-            $table->integer('jumlah');
-            $table->decimal('total_harga', 12, 2);
-            $table->dateTime('tenggat_waktu');
-            $table->text('catatan')->nullable();
+            $table->integer('total');
             $table->enum('prioritas', ['Normal', 'Tinggi'])->default('Normal');
             $table->enum('status', ['Pesanan Baru', 'Dalam Produksi', 'Selesai', 'Dibatalkan'])->default('Pesanan Baru');
-            $table->dateTime('estimasi_selesai');
+            $table->date('tenggat_waktu')->nullable();
+            $table->date('estimasi_selesai')->nullable();
             $table->timestamps();
 
             $table->foreign('id_pembeli')->references('id')->on('users')->cascadeOnDelete();
+        });
+
+        Schema::create('detail_pesanan', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedInteger('id_pesanan');
+            $table->unsignedInteger('id_produk');
+            $table->integer('jumlah');
+            $table->integer('subtotal');
+
+            $table->foreign('id_pesanan')->references('id')->on('pesanan')->cascadeOnDelete();
             $table->foreign('id_produk')->references('id')->on('produk')->cascadeOnDelete();
         });
     }
@@ -34,6 +41,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('detail_pesanan');
         Schema::dropIfExists('pesanan');
     }
 };

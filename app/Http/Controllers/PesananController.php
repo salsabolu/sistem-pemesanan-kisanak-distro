@@ -45,7 +45,6 @@ class PesananController extends Controller
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
             ->where('status', '=', 'Dalam Produksi', 'and')
             ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end") // Priority Scheduling
-            ->orderBy('tenggat_waktu', 'asc') // Earliest Due Date
             ->orderBy('created_at', 'asc') // FCFS: First Come First Served
             ->paginate(10);
 
@@ -58,13 +57,10 @@ class PesananController extends Controller
     {
         $validated = $request->validate([
             'id_pembeli' => 'required|integer|exists:users,id',
-            'id_produk' => 'required|integer|exists:produk,id',
-            'jumlah' => 'required|integer|min:1',
-            'total_harga' => 'required|numeric|min:0',
+            'total' => 'required|integer|min:0',
             'prioritas' => 'required|in:Normal,Tinggi',
-            'tenggat_waktu' => 'nullable|date',
-            'catatan' => 'nullable|string',
             'status' => 'required|in:Pesanan Baru,Dalam Produksi,Selesai,Dibatalkan',
+            'tenggat_waktu' => 'nullable|date',
             'estimasi_selesai' => 'nullable|date',
         ]);
 
@@ -77,14 +73,11 @@ class PesananController extends Controller
     {
         $validated = $request->validate([
             'id_pembeli' => 'sometimes|integer|exists:users,id',
-            'id_produk' => 'sometimes|integer|exists:produk,id',
-            'jumlah' => 'sometimes|integer|min:1',
-            'total_harga' => 'sometimes|numeric|min:0',
+            'total' => 'sometimes|integer|min:0',
             'prioritas' => 'sometimes|in:Normal,Tinggi',
-            'tenggat_waktu' => 'nullable|date',
-            'catatan' => 'nullable|string',
             'status' => 'sometimes|in:Pesanan Baru,Dalam Produksi,Selesai,Dibatalkan',
-            'estimasi_selesai' => 'nullable|date',
+            'tenggat_waktu' => 'sometimes|nullable|date',
+            'estimasi_selesai' => 'sometimes|nullable|date',
         ]);
 
         $oldStatus = $pesanan->status;
@@ -96,8 +89,12 @@ class PesananController extends Controller
         $pesanan->update($validated);
 
         if ($oldStatus !== 'Dalam Produksi' && isset($validated['status']) && $validated['status'] === 'Dalam Produksi') {
-            if ($pesanan->produk) {
-                $pesanan->produk->decrement('stok', $pesanan->jumlah, []);
+            $pesanan->loadMissing('produk');
+            foreach ($pesanan->produk as $produk) {
+                $qty = (int) ($produk->pivot->jumlah ?? 0);
+                if ($qty > 0) {
+                    $produk->decrement('stok', $qty, []);
+                }
             }
         }
 
@@ -119,8 +116,12 @@ class PesananController extends Controller
         $pesanan->update($validated);
 
         if ($oldStatus !== 'Dalam Produksi' && $validated['status'] === 'Dalam Produksi') {
-            if ($pesanan->produk) {
-                $pesanan->produk->decrement('stok', $pesanan->jumlah, []);
+            $pesanan->loadMissing('produk');
+            foreach ($pesanan->produk as $produk) {
+                $qty = (int) ($produk->pivot->jumlah ?? 0);
+                if ($qty > 0) {
+                    $produk->decrement('stok', $qty, []);
+                }
             }
         }
 

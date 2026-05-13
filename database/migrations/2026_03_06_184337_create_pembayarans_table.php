@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('bukti_pembayaran')->nullable();
             $table->enum('status', ['Menunggu', 'Belum Konfirmasi', 'Terkonfirmasi'])->default('Menunggu');
             $table->timestamps();
-
+            
             $table->foreign('id_pembeli')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('id_pesanan')->references('id')->on('pesanan')->cascadeOnDelete();
             $table->unique('id_pesanan');

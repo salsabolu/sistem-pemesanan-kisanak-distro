@@ -10,14 +10,16 @@ class Pesanan extends Model
 
     protected $fillable = [
         'id_pembeli',
-        'id_produk',
-        'jumlah',
-        'total_harga',
+        'total',
         'prioritas',
-        'tenggat_waktu',
-        'catatan',
         'status',
+        'tenggat_waktu',
         'estimasi_selesai',
+    ];
+
+    protected $casts = [
+        'tenggat_waktu' => 'date',
+        'estimasi_selesai' => 'date',
     ];
 
     public function pembeli()
@@ -27,7 +29,8 @@ class Pesanan extends Model
 
     public function produk()
     {
-        return $this->belongsTo(Produk::class, 'id_produk');
+        return $this->belongsToMany(Produk::class, 'detail_pesanan', 'id_pesanan', 'id_produk')
+            ->withPivot(['jumlah', 'subtotal']);
     }
 
     public function pembayaran()

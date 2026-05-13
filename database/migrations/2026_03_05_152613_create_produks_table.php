@@ -35,8 +35,7 @@ return new class extends Migration
             $table->unsignedInteger('id_warna')->nullable();
             $table->unsignedInteger('id_ukuran');
             $table->string('nama', 255);
-            $table->string('satuan', 255);
-            $table->decimal('harga', 12, 2);
+            $table->integer('harga');
             $table->integer('stok');
             $table->integer('stok_minimum');
             $table->integer('durasi_produksi');

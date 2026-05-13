@@ -16,7 +16,7 @@ class PembayaranController extends Controller
         $user = Auth::user();
         abort_unless($user && $user->hasAnyRole(['pemilik', 'kasir']), 403);
 
-        $pembayaran = Pembayaran::with(['pesanan.produk', 'pembeli'])
+        $pembayaran = Pembayaran::with(['pesanan.produk.warna', 'pesanan.produk.ukuran', 'pembeli'])
             ->where('status', 'Belum Konfirmasi')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -77,8 +77,12 @@ class PembayaranController extends Controller
             $pesanan = $pembayaran->pesanan;
             if ($pesanan->status !== 'Dalam Produksi') {
                 $pesanan->update(['status' => 'Dalam Produksi']);
-                if ($pesanan->produk) {
-                    $pesanan->produk->decrement('stok', $pesanan->jumlah, []);
+                $pesanan->loadMissing('produk');
+                foreach ($pesanan->produk as $produk) {
+                    $qty = (int) ($produk->pivot->jumlah ?? 0);
+                    if ($qty > 0) {
+                        $produk->decrement('stok', $qty, []);
+                    }
                 }
             }
         }

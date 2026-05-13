@@ -14,7 +14,7 @@ import RegisterModal from '@/components/RegisterModal.vue';
 
 type ProdukData = {
     id: number; nama: string; harga: number | string; stok: number; stok_minimum: number;
-    gambar: string | null; deskripsi: string | null; status: string; satuan: string;
+    gambar: string | null; deskripsi: string | null; status: string;
     kategori?: { id: number; nama: string };
     warna?: { id: number; nama: string } | null;
     ukuran?: { id: number; nama: string };

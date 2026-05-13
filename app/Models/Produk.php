@@ -16,19 +16,11 @@ class Produk extends Model
         );
     }
 
-    protected function satuan(): Attribute
-    {
-        return Attribute::make(
-            set: fn (string $value) => strtoupper($value),
-        );
-    }
-
     protected $fillable = [
         'id_kategori',
         'id_warna',
         'id_ukuran',
         'nama',
-        'satuan',
         'harga',
         'stok',
         'stok_minimum',
@@ -56,6 +48,7 @@ class Produk extends Model
 
     public function pesanan()
     {
-        return $this->hasMany(Pesanan::class, 'id_produk');
+        return $this->belongsToMany(Pesanan::class, 'detail_pesanan', 'id_produk', 'id_pesanan')
+            ->withPivot(['jumlah', 'subtotal']);
     }
 }

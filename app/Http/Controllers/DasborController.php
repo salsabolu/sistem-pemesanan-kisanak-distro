@@ -34,9 +34,11 @@ class DasborController extends Controller
         $daysInMonth = $startDate->daysInMonth;
         $chartData = array_fill(0, $daysInMonth, 0);
 
-        $salesRows = Pesanan::whereBetween('created_at', [$startDate, $endDate], 'and', false)
-            ->where('status', '!=', 'Dibatalkan', 'and')
-            ->select('created_at', 'jumlah')
+        $salesRows = DB::table('pesanan')
+            ->join('detail_pesanan', 'detail_pesanan.id_pesanan', '=', 'pesanan.id')
+            ->whereBetween('pesanan.created_at', [$startDate, $endDate], 'and', false)
+            ->where('pesanan.status', '!=', 'Dibatalkan', 'and')
+            ->select('pesanan.created_at', 'detail_pesanan.jumlah')
             ->get();
 
         $salesPerDay = [];
