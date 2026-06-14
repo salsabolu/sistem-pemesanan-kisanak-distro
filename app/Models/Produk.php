@@ -17,33 +17,69 @@ class Produk extends Model
     }
 
     protected $fillable = [
-        'id_kategori',
-        'id_warna',
-        'id_ukuran',
+        'id_bahan',
         'nama',
         'harga',
+        'deskripsi',
+        'gambar',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    protected $appends = [
         'stok',
         'stok_minimum',
         'durasi_produksi',
         'durasi_restok',
-        'deskripsi',
-        'gambar',
         'status',
     ];
 
+    public function getStokAttribute()
+    {
+        return $this->bahan?->stok ?? 0;
+    }
+
+    public function getStokMinimumAttribute()
+    {
+        return $this->bahan?->stok_minimum ?? 0;
+    }
+
+    public function getDurasiProduksiAttribute()
+    {
+        return $this->bahan?->durasi_produksi ?? 0;
+    }
+
+    public function getDurasiRestokAttribute()
+    {
+        return $this->bahan?->durasi_restok ?? 0;
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->is_active ? 'Aktif' : 'Non-Aktif';
+    }
+
+    public function bahan()
+    {
+        return $this->belongsTo(Bahan::class, 'id_bahan');
+    }
+
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'id_kategori');
+        return $this->hasOneThrough(Kategori::class, Bahan::class, 'id', 'id', 'id_bahan', 'id_kategori');
     }
 
     public function warna()
     {
-        return $this->belongsTo(Warna::class, 'id_warna');
+        return $this->hasOneThrough(Warna::class, Bahan::class, 'id', 'id', 'id_bahan', 'id_warna');
     }
 
     public function ukuran()
     {
-        return $this->belongsTo(Ukuran::class, 'id_ukuran');
+        return $this->hasOneThrough(Ukuran::class, Bahan::class, 'id', 'id', 'id_bahan', 'id_ukuran');
     }
 
     public function pesanan()

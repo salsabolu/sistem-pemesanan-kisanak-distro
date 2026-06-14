@@ -8,6 +8,7 @@ use App\Models\Produk;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class KeranjangController extends Controller
@@ -35,6 +36,7 @@ class KeranjangController extends Controller
     {
         $validated = $request->validate([
             'tenggat_waktu' => 'required|date',
+            'bukti_pembayaran' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|integer|exists:produk,id',
             'items.*.color' => 'nullable|string',
@@ -53,13 +55,19 @@ class KeranjangController extends Controller
 
         $tenggatWaktu = $validated['tenggat_waktu'];
 
+        // Save the proof of payment uploaded by Pembeli
+        $path = null;
+        if ($request->hasFile('bukti_pembayaran')) {
+            $path = Storage::disk('public')->putFile('bukti_pembayaran', $validated['bukti_pembayaran']);
+        }
+
+        // Create the order with initial status null (new order awaiting confirmation)
         $pesanan = Pesanan::create([
             'id_pembeli' => $userId,
             'total' => $total,
-            'prioritas' => 'Normal',
-            'status' => 'Pesanan Baru',
+            'status' => null, // Initial state before payment is Terkonfirmasi
             'tenggat_waktu' => $tenggatWaktu,
-            'estimasi_selesai' => $tenggatWaktu,
+            'estimasi_selesai' => null, // Calculated later upon confirmation
         ]);
 
         foreach ($validated['items'] as $item) {
@@ -73,12 +81,12 @@ class KeranjangController extends Controller
             ]);
         }
 
-        // Create pembayaran record for the new order
+        // Create pembayaran record with status 'Belum Konfirmasi' (uploaded but not yet verified)
         Pembayaran::create([
             'id_pembeli' => $userId,
             'id_pesanan' => $pesanan->id,
-            'bukti_pembayaran' => null,
-            'status' => 'Menunggu',
+            'bukti_pembayaran' => $path,
+            'status' => 'Belum Konfirmasi',
         ]);
 
         return redirect()->route('keranjang')

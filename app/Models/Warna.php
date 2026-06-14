@@ -18,10 +18,16 @@ class Warna extends Model
 
     protected $fillable = [
         'nama',
+        'kode',
+        'is_active',
     ];
 
-    public function produk()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function bahan()
     {
-        return $this->hasMany(Produk::class, 'id_warna');
+        return $this->hasMany(Bahan::class, 'id_warna');
     }
 }

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             KategoriSeeder::class,
             WarnaSeeder::class,
             UkuranSeeder::class,
+            DistroSeeder::class,
         ]);
 
         $owner = User::firstOrCreate(

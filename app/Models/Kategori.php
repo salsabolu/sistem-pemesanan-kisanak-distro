@@ -18,10 +18,15 @@ class Kategori extends Model
 
     protected $fillable = [
         'nama',
+        'is_active',
     ];
 
-    public function produk()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function bahan()
     {
-        return $this->hasMany(Produk::class, 'id_kategori');
+        return $this->hasMany(Bahan::class, 'id_kategori');
     }
 }

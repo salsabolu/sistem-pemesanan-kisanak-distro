@@ -15,10 +15,9 @@ return new class extends Migration
             $table->increments('id');
             $table->unsignedBigInteger('id_pembeli');
             $table->integer('total');
-            $table->enum('prioritas', ['Normal', 'Tinggi'])->default('Normal');
-            $table->enum('status', ['Pesanan Baru', 'Dalam Produksi', 'Selesai', 'Dibatalkan'])->default('Pesanan Baru');
-            $table->date('tenggat_waktu')->nullable();
-            $table->date('estimasi_selesai')->nullable();
+            $table->date('tenggat_waktu');
+            $table->dateTime('estimasi_selesai')->nullable();
+            $table->enum('status', ['Dalam Produksi', 'Selesai', 'Dibatalkan'])->nullable();
             $table->timestamps();
 
             $table->foreign('id_pembeli')->references('id')->on('users')->cascadeOnDelete();

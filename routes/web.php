@@ -55,12 +55,10 @@ Route::delete('/produksi/pembayaran/{pembayaran}', [PembayaranController::class,
 
 // Pesanan
 Route::get('/pesanan/daftar-pesanan', [PesananController::class, 'index'])->name('pesanan.daftar-pesanan');
-Route::get('/produksi/pesanan-baru', [PesananController::class, 'pesananBaru'])->name('produksi.pesanan-baru');
 Route::get('/produksi/antrean-produksi', [PesananController::class, 'antreanProduksi'])->name('produksi.antrean-produksi');
 Route::post('/pesanan/pesanan', [PesananController::class, 'store'])->name('pesanan.store');
 Route::put('/pesanan/pesanan/{pesanan}', [PesananController::class, 'update'])->name('pesanan.update');
 Route::patch('/pesanan/pesanan/{pesanan}/status', [PesananController::class, 'updateStatus'])->name('pesanan.update-status');
-Route::patch('/pesanan/pesanan/{pesanan}/prioritas', [PesananController::class, 'updatePrioritas'])->name('pesanan.update-prioritas');
 Route::delete('/pesanan/pesanan/{pesanan}', [PesananController::class, 'destroy'])->name('pesanan.destroy');
 
 // Master - Kategori

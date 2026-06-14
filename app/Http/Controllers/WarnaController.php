@@ -21,7 +21,11 @@ class WarnaController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'kode' => 'required|string|max:20',
+            'is_active' => 'required|boolean',
         ]);
+
+        $validated['is_active'] = $validated['is_active'] ?? true;
 
         Warna::create($validated);
 
@@ -33,6 +37,8 @@ class WarnaController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'kode' => 'required|string|max:20',
+            'is_active' => 'required|boolean',
         ]);
 
         $warna->update($validated);

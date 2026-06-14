@@ -18,7 +18,6 @@ type TopBuyer = {
 };
 
 const props = defineProps<{
-    pesananBaruCount: number;
     konfirmasiPembayaranCount: number;
     antreanProduksiCount: number;
     stokMenipisCount: number;
@@ -155,12 +154,6 @@ watch(() => props.chartData, () => {
         <main class="flex-1 p-8">
             <!-- Info Cards -->
             <div class="grid grid-cols-4 gap-4 mb-8">
-                <InfoCard title="Pesanan Baru" :count="pesananBaruCount" href="/produksi/pesanan-baru">
-                    <template #icon>
-                        <PhClipboard :size="24" class="text-black" />
-                    </template>
-                </InfoCard>
-
                 <InfoCard title="Konfirmasi Pembayaran" :count="konfirmasiPembayaranCount"
                     href="/produksi/konfirmasi-pembayaran">
                     <template #icon>

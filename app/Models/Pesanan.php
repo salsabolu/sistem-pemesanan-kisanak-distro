@@ -11,15 +11,14 @@ class Pesanan extends Model
     protected $fillable = [
         'id_pembeli',
         'total',
-        'prioritas',
-        'status',
         'tenggat_waktu',
         'estimasi_selesai',
+        'status',
     ];
 
     protected $casts = [
         'tenggat_waktu' => 'date',
-        'estimasi_selesai' => 'date',
+        'estimasi_selesai' => 'datetime',
     ];
 
     public function pembeli()

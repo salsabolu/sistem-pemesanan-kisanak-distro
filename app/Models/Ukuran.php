@@ -18,10 +18,15 @@ class Ukuran extends Model
 
     protected $fillable = [
         'nama',
+        'is_active',
     ];
 
-    public function produk()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function bahan()
     {
-        return $this->hasMany(Produk::class, 'id_ukuran');
+        return $this->hasMany(Bahan::class, 'id_ukuran');
     }
 }

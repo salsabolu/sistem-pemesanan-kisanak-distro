@@ -9,22 +9,19 @@ class UkuranSeeder extends Seeder
     public function run(): void
     {
         $ukuran = [
-            ['nama' => 'A'],
-            ['nama' => 'B'],
-            ['nama' => 'C'],
-            ['nama' => 'D'],
-            ['nama' => 'E'],
-            ['nama' => 'XS'],
-            ['nama' => 'S'],
-            ['nama' => 'M'],
-            ['nama' => 'L'],
-            ['nama' => 'XL'],
-            ['nama' => '2XL'],
-            ['nama' => '3XL'],
-            ['nama' => '4XL'],
-            ['nama' => 'A4'],
-            ['nama' => 'A3'],
-            ['nama' => '1 METER'],
+            ['nama' => 'A', 'is_active' => true],
+            ['nama' => 'B', 'is_active' => true],
+            ['nama' => 'C', 'is_active' => true],
+            ['nama' => 'D', 'is_active' => true],
+            ['nama' => 'E', 'is_active' => true],
+            ['nama' => 'XS', 'is_active' => true],
+            ['nama' => 'S', 'is_active' => true],
+            ['nama' => 'M', 'is_active' => true],
+            ['nama' => 'L', 'is_active' => true],
+            ['nama' => 'XL', 'is_active' => true],
+            ['nama' => '2XL', 'is_active' => true],
+            ['nama' => '3XL', 'is_active' => true],
+            ['nama' => '4XL', 'is_active' => true],
         ];
 
         foreach ($ukuran as $data) {

@@ -12,8 +12,8 @@ class PesananController extends Controller
     public function index()
     {
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
-            ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end")
-            ->orderBy('created_at', 'desc')
+        ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
+            ->orderBy('created_at', 'desc') // FCFS
             ->paginate(10);
 
         return Inertia::render('pesanan/DaftarPesanan', [
@@ -21,30 +21,16 @@ class PesananController extends Controller
         ]);
     }
 
-    public function pesananBaru()
-    {
-        $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
-            ->where('status', 'Pesanan Baru')
-            ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end")
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return Inertia::render('produksi/PesananBaru', [
-            'pesanan' => $pesanan,
-        ]);
-    }
-
     public function antreanProduksi()
     {
-        Pesanan::where('status', '=', 'Pesanan Baru', 'and')
+        Pesanan::whereNull('status')
             ->whereHas('pembayaran', function ($q) {
-                $q->where('status', '=', 'Terkonfirmasi', 'and');
+                $q->where('status', '=', 'Terkonfirmasi');
             })
             ->update(['status' => 'Dalam Produksi']);
 
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
-            ->where('status', '=', 'Dalam Produksi', 'and')
-            ->orderByRaw("case when prioritas = 'Tinggi' then 0 else 1 end") // Priority Scheduling
+            ->where('status', '=', 'Dalam Produksi')
             ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
             ->orderBy('created_at', 'asc') // FCFS: First Come First Served
             ->paginate(10);
@@ -59,8 +45,7 @@ class PesananController extends Controller
         $validated = $request->validate([
             'id_pembeli' => 'required|integer|exists:users,id',
             'total' => 'required|integer|min:0',
-            'prioritas' => 'required|in:Normal,Tinggi',
-            'status' => 'required|in:Pesanan Baru,Dalam Produksi,Selesai,Dibatalkan',
+            'status' => 'nullable|in:Dalam Produksi,Selesai,Dibatalkan',
             'tenggat_waktu' => 'nullable|date',
             'estimasi_selesai' => 'nullable|date',
         ]);
@@ -75,8 +60,7 @@ class PesananController extends Controller
         $validated = $request->validate([
             'id_pembeli' => 'sometimes|integer|exists:users,id',
             'total' => 'sometimes|integer|min:0',
-            'prioritas' => 'sometimes|in:Normal,Tinggi',
-            'status' => 'sometimes|in:Pesanan Baru,Dalam Produksi,Selesai,Dibatalkan',
+            'status' => 'sometimes|nullable|in:Dalam Produksi,Selesai,Dibatalkan',
             'tenggat_waktu' => 'sometimes|nullable|date',
             'estimasi_selesai' => 'sometimes|nullable|date',
         ]);
@@ -90,11 +74,11 @@ class PesananController extends Controller
         $pesanan->update($validated);
 
         if ($oldStatus !== 'Dalam Produksi' && isset($validated['status']) && $validated['status'] === 'Dalam Produksi') {
-            $pesanan->loadMissing('produk');
+            $pesanan->loadMissing('produk.bahan');
             foreach ($pesanan->produk as $produk) {
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
-                if ($qty > 0) {
-                    $produk->decrement('stok', $qty, []);
+                if ($qty > 0 && $produk->bahan) {
+                    $produk->bahan->decrement('stok', $qty);
                 }
             }
         }
@@ -105,7 +89,7 @@ class PesananController extends Controller
     public function updateStatus(Request $request, Pesanan $pesanan)
     {
         $validated = $request->validate([
-            'status' => 'required|in:Pesanan Baru,Dalam Produksi,Selesai,Dibatalkan',
+            'status' => 'required|in:Dalam Produksi,Selesai,Dibatalkan',
         ]);
 
         $oldStatus = $pesanan->status;
@@ -117,27 +101,16 @@ class PesananController extends Controller
         $pesanan->update($validated);
 
         if ($oldStatus !== 'Dalam Produksi' && $validated['status'] === 'Dalam Produksi') {
-            $pesanan->loadMissing('produk');
+            $pesanan->loadMissing('produk.bahan');
             foreach ($pesanan->produk as $produk) {
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
-                if ($qty > 0) {
-                    $produk->decrement('stok', $qty, []);
+                if ($qty > 0 && $produk->bahan) {
+                    $produk->bahan->decrement('stok', $qty);
                 }
             }
         }
 
         return redirect()->back()->with('success', 'Status pesanan berhasil diperbarui.');
-    }
-
-    public function updatePrioritas(Request $request, Pesanan $pesanan)
-    {
-        $validated = $request->validate([
-            'prioritas' => 'required|in:Normal,Tinggi',
-        ]);
-
-        $pesanan->update($validated);
-
-        return redirect()->back()->with('success', 'Prioritas pesanan berhasil diperbarui.');
     }
 
     public function destroy(Pesanan $pesanan)

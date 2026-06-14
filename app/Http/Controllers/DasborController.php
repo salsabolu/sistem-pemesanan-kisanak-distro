@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pesanan;
 use App\Models\Pembayaran;
 use App\Models\Produk;
+use App\Models\Bahan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -18,19 +19,16 @@ class DasborController extends Controller
         $startDate = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $selectedMonth)->endOfMonth();
 
-        // 1. Pesanan Baru Count
-        $pesananBaruCount = Pesanan::where('status', '=', 'Pesanan Baru', 'and')->count();
-
-        // 2. Konfirmasi Pembayaran Count
+        // 1. Konfirmasi Pembayaran Count
         $konfirmasiPembayaranCount = Pembayaran::where('status', '=', 'Belum Konfirmasi', 'and')->count();
 
-        // 3. Antrean Produksi Count
+        // 2. Antrean Produksi Count
         $antreanProduksiCount = Pesanan::where('status', '=', 'Dalam Produksi', 'and')->count();
 
-        // 4. Stok Menipis Count
-        $stokMenipisCount = Produk::whereColumn('stok', '<=', 'stok_minimum', 'and')->where('status', '=', 'Aktif', 'and')->count();
+        // 3. Stok Menipis Count
+        $stokMenipisCount = Bahan::whereColumn('stok', '<=', 'stok_minimum')->where('is_active', true)->count();
 
-        // 5. Chart Data (Total Sales Volume per Day for the selected month)
+        // 4. Chart Data (Total Sales Volume per Day for the selected month)
         $daysInMonth = $startDate->daysInMonth;
         $chartData = array_fill(0, $daysInMonth, 0);
 
@@ -51,7 +49,7 @@ class DasborController extends Controller
             $chartData[$day - 1] = $total;
         }
 
-        // 6. Top Buyers for the selected month
+        // 5. Top Buyers for the selected month
         // Hitung manual dari tabel `pesanan` agar field `total_pesanan` pasti ada di JSON.
         $pembeliTeratas = DB::table('pesanan')
             ->join('users', 'users.id', '=', 'pesanan.id_pembeli')
@@ -78,7 +76,6 @@ class DasborController extends Controller
             ->values();
 
         return Inertia::render('Dasbor', [
-            'pesananBaruCount' => $pesananBaruCount,
             'konfirmasiPembayaranCount' => $konfirmasiPembayaranCount,
             'antreanProduksiCount' => $antreanProduksiCount,
             'stokMenipisCount' => $stokMenipisCount,

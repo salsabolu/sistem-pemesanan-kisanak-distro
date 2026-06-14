@@ -21,7 +21,10 @@ class UkuranController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'is_active' => 'required|boolean',
         ]);
+
+        $validated['is_active'] = $validated['is_active'] ?? true;
 
         Ukuran::create($validated);
 
@@ -33,6 +36,7 @@ class UkuranController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'is_active' => 'required|boolean',
         ]);
 
         $ukuran->update($validated);

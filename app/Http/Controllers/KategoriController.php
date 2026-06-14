@@ -21,7 +21,10 @@ class KategoriController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'is_active' => 'required|boolean',
         ]);
+
+        $validated['is_active'] = $validated['is_active'] ?? true;
 
         Kategori::create($validated);
 
@@ -33,6 +36,7 @@ class KategoriController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'is_active' => 'required|boolean',
         ]);
 
         $kategori->update($validated);

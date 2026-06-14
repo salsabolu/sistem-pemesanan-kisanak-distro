@@ -77,11 +77,11 @@ class PembayaranController extends Controller
             $pesanan = $pembayaran->pesanan;
             if ($pesanan->status !== 'Dalam Produksi') {
                 $pesanan->update(['status' => 'Dalam Produksi']);
-                $pesanan->loadMissing('produk');
+                $pesanan->loadMissing('produk.bahan');
                 foreach ($pesanan->produk as $produk) {
                     $qty = (int) ($produk->pivot->jumlah ?? 0);
-                    if ($qty > 0) {
-                        $produk->decrement('stok', $qty, []);
+                    if ($qty > 0 && $produk->bahan) {
+                        $produk->bahan->decrement('stok', $qty);
                     }
                 }
             }
