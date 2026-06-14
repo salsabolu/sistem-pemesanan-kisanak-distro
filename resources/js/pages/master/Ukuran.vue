@@ -9,7 +9,7 @@ import Sidebar from '../../components/Sidebar.vue';
 
 const props = defineProps<{
     ukuran?: {
-        data: { id: number; nama: string }[];
+        data: { id: number; nama: string; panjang: number | null; lebar: number | null; is_active: boolean }[];
         current_page: number;
         last_page: number;
         links: { url: string | null; label: string; active: boolean }[];
@@ -17,22 +17,29 @@ const props = defineProps<{
 }>();
 
 const showModal = ref(false);
-const editingItem = ref<{ id: number; nama: string } | null>(null);
+const editingItem = ref<{ id: number; nama: string; panjang: number | null; lebar: number | null; is_active: boolean } | null>(null);
 
 const form = useForm({
     nama: '',
+    panjang: null as number | null,
+    lebar: null as number | null,
+    is_active: true as boolean,
 });
 
 function openTambah() {
     editingItem.value = null;
     form.reset();
+    form.is_active = true;
     form.clearErrors();
     showModal.value = true;
 }
 
-function openEdit(item: { id: number; nama: string }) {
+function openEdit(item: { id: number; nama: string; panjang: number | null; lebar: number | null; is_active: boolean }) {
     editingItem.value = item;
     form.nama = item.nama;
+    form.panjang = item.panjang;
+    form.lebar = item.lebar;
+    form.is_active = item.is_active;
     form.clearErrors();
     showModal.value = true;
 }
@@ -61,13 +68,7 @@ function hapusItem(id: number) {
     }
 }
 
-const fallbackItems = [
-    { id: 1, nama: 'XS' }, { id: 2, nama: 'S' }, { id: 3, nama: 'M' },
-    { id: 4, nama: 'L' }, { id: 5, nama: 'XL' }, { id: 6, nama: 'XXL' },
-    { id: 7, nama: 'XXXL' }, { id: 8, nama: 'D' },
-];
-
-const items = computed(() => props.ukuran?.data ?? fallbackItems);
+const items = computed(() => props.ukuran?.data ?? []);
 const paginationLinks = computed(() => props.ukuran?.links ?? []);
 </script>
 
@@ -87,7 +88,7 @@ const paginationLinks = computed(() => props.ukuran?.links ?? []);
                     @click="openTambah">Tambah</button>
             </div>
 
-            <div class="border border-black/10 rounded-lg overflow-hidden max-w-xl">
+            <div class="border border-black/10 rounded-lg overflow-hidden max-w-2xl">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-white-hover/50">
@@ -102,13 +103,33 @@ const paginationLinks = computed(() => props.ukuran?.links ?? []);
                                     </svg>
                                 </span>
                             </th>
+                            <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">
+                                <div>Panjang</div>
+                                <div class="text-black/40 text-[10px] normal-case">cm</div>
+                            </th>
+                            <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">
+                                <div>Lebar</div>
+                                <div class="text-black/40 text-[10px] normal-case">cm</div>
+                            </th>
+                            <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase w-28">Status</th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase w-24">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="items.length === 0">
+                            <td colspan="6" class="px-4 py-6 text-center text-black/50">Belum ada ukuran.</td>
+                        </tr>
                         <tr v-for="(item, idx) in items" :key="item.id" class="border-t border-black/5">
                             <td class="px-4 py-3 text-black">{{ idx + 1 }}</td>
                             <td class="px-4 py-3 text-black font-medium uppercase">{{ item.nama }}</td>
+                            <td class="px-4 py-3 text-black">{{ item.panjang ?? '-' }}</td>
+                            <td class="px-4 py-3 text-black">{{ item.lebar ?? '-' }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs"
+                                    :class="item.is_active ? 'bg-green text-white' : 'bg-black/10 text-black/40'">
+                                    {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                </span>
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <button type="button" class="text-black/50 hover:text-black"
@@ -158,6 +179,37 @@ const paginationLinks = computed(() => props.ukuran?.links ?? []);
                         class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                         placeholder="Masukkan nama ukuran" required />
                     <div v-if="form.errors.nama" class="text-red-500 text-xs mt-1">{{ form.errors.nama }}</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-black text-sm mb-1">Panjang (cm)</label>
+                        <input v-model.number="form.panjang" type="number" min="0"
+                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
+                            placeholder="Opsional" />
+                        <div v-if="form.errors.panjang" class="text-red-500 text-xs mt-1">{{ form.errors.panjang }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-black text-sm mb-1">Lebar (cm)</label>
+                        <input v-model.number="form.lebar" type="number" min="0"
+                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
+                            placeholder="Opsional" />
+                        <div v-if="form.errors.lebar" class="text-red-500 text-xs mt-1">{{ form.errors.lebar }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-black text-sm mb-1">Status</label>
+                    <div class="flex items-center gap-3">
+                        <button type="button"
+                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                            :class="form.is_active ? 'bg-black' : 'bg-black/20'"
+                            @click="form.is_active = !form.is_active">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                :class="form.is_active ? 'translate-x-6' : 'translate-x-1'" />
+                        </button>
+                        <span class="text-sm text-black">{{ form.is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-2">

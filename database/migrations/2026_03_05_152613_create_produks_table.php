@@ -29,6 +29,8 @@ return new class extends Migration
         Schema::create('ukuran', function (Blueprint $table) {
             $table->increments('id');
             $table->string('nama', 255);
+            $table->integer('panjang')->nullable(); // cm
+            $table->integer('lebar')->nullable();   // cm
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

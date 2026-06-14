@@ -15,16 +15,12 @@ class ProdukController extends Controller
 {
     public function index()
     {
-        $produks = Produk::with(['kategori', 'warna', 'ukuran', 'bahan'])->paginate(10);
-        $kategori = Kategori::all();
-        $warna = Warna::all();
-        $ukuran = Ukuran::all();
+        $produks = Produk::with(['bahan.kategori', 'bahan.warna', 'bahan.ukuran'])->paginate(10);
+        $bahan = Bahan::with(['kategori', 'warna', 'ukuran'])->where('is_active', true)->get();
 
         return Inertia::render('master/Produk', [
             'produks' => $produks,
-            'kategori' => $kategori,
-            'warna' => $warna,
-            'ukuran' => $ukuran,
+            'bahan'   => $bahan,
         ]);
     }
 
@@ -79,29 +75,16 @@ class ProdukController extends Controller
             return redirect()->route('katalog')->with('openLogin', true);
         }
 
-        $produk->load(['kategori', 'warna', 'ukuran', 'bahan']);
+        $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
 
-        $variants = Produk::where('nama', '=', $produk->nama, 'and')
+        $variants = Produk::where('nama', '=', $produk->nama)
             ->where('is_active', true)
-            ->with(['warna', 'ukuran', 'bahan'])
+            ->with(['bahan.warna', 'bahan.ukuran'])
             ->get();
 
         // Get all unique colors and sizes for products with the same name
-        $warnaOptions = Produk::where('nama', '=', $produk->nama, 'and')
-            ->where('is_active', true)
-            ->with('warna')
-            ->get()
-            ->pluck('warna.nama')
-            ->unique()
-            ->values();
-
-        $ukuranOptions = Produk::where('nama', '=', $produk->nama, 'and')
-            ->where('is_active', true)
-            ->with('ukuran')
-            ->get()
-            ->pluck('ukuran.nama')
-            ->unique()
-            ->values();
+        $warnaOptions = $variants->pluck('bahan.warna.nama')->filter()->unique()->values();
+        $ukuranOptions = $variants->pluck('bahan.ukuran.nama')->filter()->unique()->values();
 
         return Inertia::render('produk/DetailProduk', [
             'produk' => $produk,
@@ -114,18 +97,12 @@ class ProdukController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_kategori' => 'required|integer|exists:kategori,id',
-            'id_warna' => 'nullable|integer|exists:warna,id',
-            'id_ukuran' => 'required|integer|exists:ukuran,id',
-            'nama' => 'required|string|max:255',
-            'harga' => 'required|integer|min:0',
-            'stok' => 'required|integer|min:0',
-            'stok_minimum' => 'required|integer|min:0',
-            'durasi_produksi' => 'required|integer|min:0',
-            'durasi_restok' => 'required|integer|min:0',
+            'id_bahan'  => 'required|integer|exists:bahan,id',
+            'nama'      => 'required|string|max:255',
+            'harga'     => 'required|integer|min:0',
             'deskripsi' => 'nullable|string',
-            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'status' => 'required|in:Aktif,Non-Aktif',
+            'gambar'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -136,27 +113,9 @@ class ProdukController extends Controller
         }
 
         $validated['deskripsi'] = $validated['deskripsi'] ?: '-';
+        $validated['is_active'] = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
 
-        $bahan = Bahan::create([
-            'id_kategori' => $validated['id_kategori'],
-            'id_warna' => $validated['id_warna'],
-            'id_ukuran' => $validated['id_ukuran'],
-            'nama' => $validated['nama'],
-            'stok' => $validated['stok'],
-            'stok_minimum' => $validated['stok_minimum'],
-            'durasi_produksi' => $validated['durasi_produksi'],
-            'durasi_restok' => $validated['durasi_restok'],
-            'is_active' => $validated['status'] === 'Aktif',
-        ]);
-
-        Produk::create([
-            'id_bahan' => $bahan->id,
-            'nama' => $validated['nama'],
-            'harga' => $validated['harga'],
-            'deskripsi' => $validated['deskripsi'],
-            'gambar' => $validated['gambar'],
-            'is_active' => $validated['status'] === 'Aktif',
-        ]);
+        Produk::create($validated);
 
         return redirect()->route('master.produk')
             ->with('success', 'Produk berhasil ditambahkan.');
@@ -165,18 +124,12 @@ class ProdukController extends Controller
     public function update(Request $request, Produk $produk)
     {
         $validated = $request->validate([
-            'id_kategori' => 'required|integer|exists:kategori,id',
-            'id_warna' => 'nullable|integer|exists:warna,id',
-            'id_ukuran' => 'required|integer|exists:ukuran,id',
-            'nama' => 'required|string|max:255',
-            'harga' => 'required|integer|min:0',
-            'stok' => 'required|integer|min:0',
-            'stok_minimum' => 'required|integer|min:0',
-            'durasi_produksi' => 'required|integer|min:0',
-            'durasi_restok' => 'required|integer|min:0',
+            'id_bahan'  => 'required|integer|exists:bahan,id',
+            'nama'      => 'required|string|max:255',
+            'harga'     => 'required|integer|min:0',
             'deskripsi' => 'nullable|string',
-            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'status' => 'required|in:Aktif,Non-Aktif',
+            'gambar'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -187,31 +140,30 @@ class ProdukController extends Controller
         }
 
         $validated['deskripsi'] = $validated['deskripsi'] ?: '-';
-
-        if ($produk->bahan) {
-            $produk->bahan->update([
-                'id_kategori' => $validated['id_kategori'],
-                'id_warna' => $validated['id_warna'],
-                'id_ukuran' => $validated['id_ukuran'],
-                'nama' => $validated['nama'],
-                'stok' => $validated['stok'],
-                'stok_minimum' => $validated['stok_minimum'],
-                'durasi_produksi' => $validated['durasi_produksi'],
-                'durasi_restok' => $validated['durasi_restok'],
-                'is_active' => $validated['status'] === 'Aktif',
-            ]);
-        }
+        $validated['is_active'] = filter_var($request->input('is_active', $produk->is_active), FILTER_VALIDATE_BOOLEAN);
 
         $produk->update([
-            'nama' => $validated['nama'],
-            'harga' => $validated['harga'],
+            'id_bahan'  => $validated['id_bahan'],
+            'nama'      => $validated['nama'],
+            'harga'     => $validated['harga'],
             'deskripsi' => $validated['deskripsi'],
-            'gambar' => $validated['gambar'] ?? $produk->gambar,
-            'is_active' => $validated['status'] === 'Aktif',
+            'gambar'    => $validated['gambar'] ?? $produk->gambar,
+            'is_active' => $validated['is_active'],
         ]);
 
         return redirect()->route('master.produk')
             ->with('success', 'Produk berhasil diperbarui.');
+    }
+
+    public function updateStatus(Request $request, Produk $produk)
+    {
+        $validated = $request->validate([
+            'is_active' => 'required|boolean',
+        ]);
+
+        $produk->update(['is_active' => $validated['is_active']]);
+
+        return redirect()->back()->with('success', 'Status produk berhasil diperbarui.');
     }
 
     public function destroy(Produk $produk)

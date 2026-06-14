@@ -9,7 +9,7 @@ import Sidebar from '../../components/Sidebar.vue';
 
 const props = defineProps<{
     kategori?: {
-        data: { id: number; nama: string }[];
+        data: { id: number; nama: string; is_active: boolean }[];
         current_page: number;
         last_page: number;
         links: { url: string | null; label: string; active: boolean }[];
@@ -18,22 +18,25 @@ const props = defineProps<{
 
 // Modal state
 const showModal = ref(false);
-const editingItem = ref<{ id: number; nama: string } | null>(null);
+const editingItem = ref<{ id: number; nama: string; is_active: boolean } | null>(null);
 
 const form = useForm({
     nama: '',
+    is_active: true as boolean,
 });
 
 function openTambah() {
     editingItem.value = null;
     form.reset();
+    form.is_active = true;
     form.clearErrors();
     showModal.value = true;
 }
 
-function openEdit(item: { id: number; nama: string }) {
+function openEdit(item: { id: number; nama: string; is_active: boolean }) {
     editingItem.value = item;
     form.nama = item.nama;
+    form.is_active = item.is_active;
     form.clearErrors();
     showModal.value = true;
 }
@@ -62,15 +65,7 @@ function hapusItem(id: number) {
     }
 }
 
-// Fallback data if no props
-const fallbackItems = [
-    { id: 1, nama: 'KAOS' },
-    { id: 2, nama: 'KAOS SABLON' },
-    { id: 3, nama: 'HOODIE' },
-    { id: 4, nama: 'TOTEBAG' },
-];
-
-const items = computed(() => props.kategori?.data ?? fallbackItems);
+const items = computed(() => props.kategori?.data ?? []);
 const paginationLinks = computed(() => props.kategori?.links ?? []);
 </script>
 
@@ -105,6 +100,7 @@ const paginationLinks = computed(() => props.kategori?.links ?? []);
                                     </svg>
                                 </span>
                             </th>
+                            <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase w-28">Status</th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase w-24">Aksi</th>
                         </tr>
                     </thead>
@@ -112,6 +108,12 @@ const paginationLinks = computed(() => props.kategori?.links ?? []);
                         <tr v-for="(item, idx) in items" :key="item.id" class="border-t border-black/5">
                             <td class="px-4 py-3 text-black">{{ idx + 1 }}</td>
                             <td class="px-4 py-3 text-black font-medium uppercase">{{ item.nama }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs"
+                                    :class="item.is_active ? 'bg-green text-white' : 'bg-black/10 text-black/40'">
+                                    {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                </span>
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <button type="button" class="text-black/50 hover:text-black"
@@ -161,6 +163,20 @@ const paginationLinks = computed(() => props.kategori?.links ?? []);
                         class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                         placeholder="Masukkan nama kategori" required />
                     <div v-if="form.errors.nama" class="text-red-500 text-xs mt-1">{{ form.errors.nama }}</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-black text-sm mb-1">Status</label>
+                    <div class="flex items-center gap-3">
+                        <button type="button"
+                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                            :class="form.is_active ? 'bg-black' : 'bg-black/20'"
+                            @click="form.is_active = !form.is_active">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                :class="form.is_active ? 'translate-x-6' : 'translate-x-1'" />
+                        </button>
+                        <span class="text-sm text-black">{{ form.is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-2">

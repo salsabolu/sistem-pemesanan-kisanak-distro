@@ -21,6 +21,8 @@ class UkuranController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'panjang' => 'nullable|integer|min:0',
+            'lebar' => 'nullable|integer|min:0',
             'is_active' => 'required|boolean',
         ]);
 
@@ -36,6 +38,8 @@ class UkuranController extends Controller
     {
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
+            'panjang' => 'nullable|integer|min:0',
+            'lebar' => 'nullable|integer|min:0',
             'is_active' => 'required|boolean',
         ]);
 

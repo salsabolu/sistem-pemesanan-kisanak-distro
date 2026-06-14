@@ -6,23 +6,35 @@ import {
 import { ref, computed } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
 
-type ProdukData = {
-    id: number; nama: string; harga: number; stok: number;
-    stok_minimum: number; durasi_produksi: number; durasi_restok: number;
-    deskripsi: string | null; gambar: string | null; status: string;
-    id_kategori: number; id_warna: number | null; id_ukuran: number;
-    kategori?: { id: number; nama: string }; warna?: { id: number; nama: string } | null;
+type BahanData = {
+    id: number;
+    nama: string;
+    stok: number;
+    stok_minimum: number;
+    durasi_produksi: number;
+    durasi_restok: number;
+    is_active: boolean;
+    kategori?: { id: number; nama: string };
+    warna?: { id: number; nama: string; kode: string } | null;
     ukuran?: { id: number; nama: string };
+};
+
+type ProdukData = {
+    id: number;
+    id_bahan: number;
+    nama: string;
+    harga: number;
+    deskripsi: string | null;
+    gambar: string | null;
+    is_active: boolean;
+    bahan?: BahanData | null;
 };
 
 const props = defineProps<{
     produks?: { data: ProdukData[]; links: { url: string | null; label: string; active: boolean }[] };
-    kategori?: { id: number; nama: string }[];
-    warna?: { id: number; nama: string }[];
-    ukuran?: { id: number; nama: string }[];
+    bahan?: { id: number; nama: string; kategori?: { nama: string }; warna?: { nama: string } | null; ukuran?: { nama: string } }[];
 }>();
 
-const statusOptions = ['Aktif', 'Non-Aktif'] as const;
 const showModal = ref(false);
 const editingItem = ref<ProdukData | null>(null);
 
@@ -30,9 +42,11 @@ const gambarFile = ref<File | null>(null);
 const gambarPreview = ref<string | null>(null);
 
 const form = useForm({
-    id_kategori: '', id_warna: '', id_ukuran: '', nama: '',
-    harga: 0, stok: 0, stok_minimum: 0, durasi_produksi: 0, durasi_restok: 0,
-    deskripsi: '', status: 'Aktif',
+    id_bahan: '',
+    nama: '',
+    harga: 0,
+    deskripsi: '',
+    is_active: true as boolean,
 });
 
 const hargaFormatted = computed({
@@ -46,16 +60,6 @@ const hargaFormatted = computed({
     }
 });
 
-const durasiRestokHari = computed({
-    get() {
-        return form.durasi_restok ? form.durasi_restok / 1440 : 0;
-    },
-    set(val: number | string) {
-        const numericVal = typeof val === 'string' ? parseFloat(val) : val;
-        form.durasi_restok = (isNaN(numericVal) ? 0 : numericVal) * 1440;
-    }
-});
-
 function onFileChange(e: Event) {
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0]) {
@@ -66,38 +70,35 @@ function onFileChange(e: Event) {
 
 function openTambah() {
     editingItem.value = null; form.reset(); form.clearErrors();
+    form.is_active = true;
     gambarFile.value = null; gambarPreview.value = null;
     showModal.value = true;
 }
 
 function openEdit(item: ProdukData) {
     editingItem.value = item; form.clearErrors();
-    form.id_kategori = String(item.id_kategori); form.id_warna = item.id_warna ? String(item.id_warna) : '';
-    form.id_ukuran = String(item.id_ukuran); form.nama = item.nama;
-    form.harga = item.harga; form.stok = item.stok; form.stok_minimum = item.stok_minimum;
-    form.durasi_produksi = item.durasi_produksi; form.durasi_restok = item.durasi_restok;
+    form.id_bahan = String(item.id_bahan);
+    form.nama = item.nama;
+    form.harga = item.harga;
     form.deskripsi = item.deskripsi ?? '';
-    form.status = item.status;
+    form.is_active = item.is_active;
     gambarFile.value = null;
     gambarPreview.value = (item.gambar && item.gambar !== '-') ? item.gambar : null;
     showModal.value = true;
 }
 
-function closeModal() { showModal.value = false; editingItem.value = null; form.reset(); gambarFile.value = null; gambarPreview.value = null; }
+function closeModal() {
+    showModal.value = false; editingItem.value = null; form.reset();
+    gambarFile.value = null; gambarPreview.value = null;
+}
 
 function submitForm() {
     const fd = new FormData();
-    fd.append('id_kategori', form.id_kategori);
-    fd.append('id_warna', form.id_warna);
-    fd.append('id_ukuran', form.id_ukuran);
+    fd.append('id_bahan', form.id_bahan);
     fd.append('nama', form.nama);
     fd.append('harga', String(form.harga));
-    fd.append('stok', String(form.stok));
-    fd.append('stok_minimum', String(form.stok_minimum));
-    fd.append('durasi_produksi', String(form.durasi_produksi));
-    fd.append('durasi_restok', String(form.durasi_restok));
     fd.append('deskripsi', form.deskripsi);
-    fd.append('status', form.status);
+    fd.append('is_active', form.is_active ? '1' : '0');
     if (gambarFile.value) fd.append('gambar', gambarFile.value);
 
     if (editingItem.value) {
@@ -108,31 +109,23 @@ function submitForm() {
     }
 }
 
-function cycleStatus(item: ProdukData) {
-    const next = item.status === 'Aktif' ? 'Non-Aktif' : 'Aktif';
-    router.put(`/master/produk/${item.id}`, { ...item, status: next }, { preserveScroll: true });
-}
-
 function deleteItem(item: ProdukData) {
     if (confirm(`Apakah Anda yakin ingin menghapus produk "${item.nama}"?`)) {
         router.delete(`/master/produk/${item.id}`, { preserveScroll: true });
     }
 }
 
-function statusColor(s: string) { return s === 'Aktif' ? 'bg-green text-white' : 'bg-red text-white'; }
+function statusColor(active: boolean) {
+    return active ? 'bg-green text-white' : 'bg-black/10 text-black/40';
+}
 
-const fallback = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1, nama: 'KAOS POLOS DEWASA...', harga: 40000, stok: 5, stok_minimum: 5,
-    durasi_produksi: 5, durasi_restok: 1440, deskripsi: null, gambar: null,
-    status: i === 9 ? 'Non-Aktif' : 'Aktif', id_kategori: 1, id_warna: 1, id_ukuran: 3,
-    warna: { id: 1, nama: 'PUTIH' }, ukuran: { id: 3, nama: 'M' },
-} as ProdukData));
+function toggleStatus(item: ProdukData) {
+    router.patch(`/master/produk/${item.id}/status`, { is_active: !item.is_active }, { preserveScroll: true });
+}
 
-const items = computed(() => props.produks?.data ?? fallback);
+const items = computed(() => props.produks?.data ?? []);
 const paginationLinks = computed(() => props.produks?.links ?? []);
-const kategoriList = computed(() => props.kategori ?? []);
-const warnaList = computed(() => props.warna ?? []);
-const ukuranList = computed(() => props.ukuran ?? []);
+const bahanList = computed(() => props.bahan ?? []);
 </script>
 
 <template>
@@ -162,17 +155,8 @@ const ukuranList = computed(() => props.ukuran ?? []);
                                     </svg>
                                 </span>
                             </th>
+                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Bahan</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Harga</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok Minimum</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
-                                <div>Durasi Produksi</div>
-                                <div class="text-black/40 text-[10px] normal-case">Menit</div>
-                            </th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
-                                <div>Durasi Restock</div>
-                                <div class="text-black/40 text-[10px] normal-case">Hari</div>
-                            </th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Status</th>
                             <th class="text-center px-3 py-3 text-black font-medium text-xs uppercase">Aksi</th>
                         </tr>
@@ -184,18 +168,19 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <td class="px-3 py-3 text-black">{{ idx + 1 }}</td>
                             <td class="px-3 py-3">
                                 <div class="text-black text-sm font-medium uppercase">{{ item.nama }}</div>
-                                <div class="text-black/50 text-xs uppercase">{{ item.warna?.nama ?? '' }} / {{
-                                    item.ukuran?.nama ?? '' }}</div>
+                                <div class="text-black/50 text-xs uppercase">
+                                    {{ item.bahan?.warna?.nama ?? '-' }} / {{ item.bahan?.ukuran?.nama ?? '-' }}
+                                </div>
+                            </td>
+                            <td class="px-3 py-3 text-black/70 text-xs uppercase">
+                                {{ item.bahan?.kategori?.nama ?? '-' }}
                             </td>
                             <td class="px-3 py-3 text-black">Rp{{ Number(item.harga).toLocaleString('id-ID') }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.stok }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.stok_minimum }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.durasi_produksi }}</td>
-                            <td class="px-3 py-3 text-black">{{ Math.round(item.durasi_restok / 1440) }}</td>
                             <td class="px-3 py-3" @click.stop>
                                 <button type="button" class="px-3 py-1 rounded-full text-xs"
-                                    :class="statusColor(item.status)" @click="cycleStatus(item)">{{ item.status
-                                    }}</button>
+                                    :class="statusColor(item.is_active)" @click="toggleStatus(item)">
+                                    {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
+                                </button>
                             </td>
                             <td class="px-3 py-3 text-center" @click.stop>
                                 <button type="button"
@@ -233,79 +218,48 @@ const ukuranList = computed(() => props.ukuran ?? []);
             <form @submit.prevent="submitForm">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="col-span-2">
-                        <label class="block text-black text-sm mb-1">Nama <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Nama Produk <span class="text-red-500">*</span></label>
                         <input v-model="form.nama" type="text"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
+                        <div v-if="form.errors.nama" class="text-red-500 text-xs mt-1">{{ form.errors.nama }}</div>
                     </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Kategori <span
-                                class="text-red-500">*</span></label>
-                        <select v-model="form.id_kategori"
+
+                    <div class="col-span-2">
+                        <label class="block text-black text-sm mb-1">Bahan <span class="text-red-500">*</span></label>
+                        <select v-model="form.id_bahan"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required>
-                            <option value="" disabled>Pilih kategori</option>
-                            <option v-for="k in kategoriList" :key="k.id" :value="String(k.id)">{{ k.nama }}</option>
+                            <option value="" disabled>Pilih bahan</option>
+                            <option v-for="b in bahanList" :key="b.id" :value="String(b.id)">
+                                {{ b.nama }} — {{ b.kategori?.nama ?? '' }}{{ b.warna ? ' / ' + b.warna.nama : '' }}{{ b.ukuran ? ' / ' + b.ukuran.nama : '' }}
+                            </option>
                         </select>
+                        <div v-if="form.errors.id_bahan" class="text-red-500 text-xs mt-1">{{ form.errors.id_bahan }}</div>
                     </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Warna</label>
-                        <select v-model="form.id_warna"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black">
-                            <option value="">Pilih warna (Opsional)</option>
-                            <option v-for="w in warnaList" :key="w.id" :value="String(w.id)">{{ w.nama }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Ukuran <span class="text-red-500">*</span></label>
-                        <select v-model="form.id_ukuran"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required>
-                            <option value="" disabled>Pilih ukuran</option>
-                            <option v-for="u in ukuranList" :key="u.id" :value="String(u.id)">{{ u.nama }}</option>
-                        </select>
-                    </div>
+
                     <div>
                         <label class="block text-black text-sm mb-1">Harga <span class="text-red-500">*</span></label>
                         <input v-model="hargaFormatted" type="text"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
+                        <div v-if="form.errors.harga" class="text-red-500 text-xs mt-1">{{ form.errors.harga }}</div>
                     </div>
+
                     <div>
-                        <label class="block text-black text-sm mb-1">Stok <span class="text-red-500">*</span></label>
-                        <input v-model.number="form.stok" type="number" min="0"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
+                        <label class="block text-black text-sm mb-1">Status</label>
+                        <div class="flex items-center gap-3 mt-2">
+                            <button type="button"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                :class="form.is_active ? 'bg-black' : 'bg-black/20'"
+                                @click="form.is_active = !form.is_active">
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                    :class="form.is_active ? 'translate-x-6' : 'translate-x-1'" />
+                            </button>
+                            <span class="text-sm text-black">{{ form.is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Stok Minimum <span
-                                class="text-red-500">*</span></label>
-                        <input v-model.number="form.stok_minimum" type="number" min="0"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
-                    </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Durasi Produksi (Menit) <span
-                                class="text-red-500">*</span></label>
-                        <input v-model.number="form.durasi_produksi" type="number" min="0"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
-                    </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Durasi Restok (Hari) <span
-                                class="text-red-500">*</span></label>
-                        <input v-model.number="durasiRestokHari" type="number" min="0" step="1"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
-                    </div>
-                    <div>
-                        <label class="block text-black text-sm mb-1">Status <span class="text-red-500">*</span></label>
-                        <select v-model="form.status"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required>
-                            <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
-                        </select>
-                    </div>
+
                     <div>
                         <label class="block text-black text-sm mb-1">Gambar</label>
                         <input type="file" accept="image/jpeg,image/png,image/webp" @change="onFileChange"
@@ -313,6 +267,7 @@ const ukuranList = computed(() => props.ukuran ?? []);
                         <img v-if="gambarPreview" :src="gambarPreview" alt="Preview"
                             class="mt-2 h-24 w-24 object-cover rounded border border-black/10" />
                     </div>
+
                     <div class="col-span-2">
                         <label class="block text-black text-sm mb-1">Deskripsi</label>
                         <textarea v-model="form.deskripsi" rows="3"

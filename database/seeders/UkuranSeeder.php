@@ -9,19 +9,18 @@ class UkuranSeeder extends Seeder
     public function run(): void
     {
         $ukuran = [
-            ['nama' => 'A', 'is_active' => true],
-            ['nama' => 'B', 'is_active' => true],
-            ['nama' => 'C', 'is_active' => true],
-            ['nama' => 'D', 'is_active' => true],
-            ['nama' => 'E', 'is_active' => true],
-            ['nama' => 'XS', 'is_active' => true],
-            ['nama' => 'S', 'is_active' => true],
-            ['nama' => 'M', 'is_active' => true],
-            ['nama' => 'L', 'is_active' => true],
-            ['nama' => 'XL', 'is_active' => true],
-            ['nama' => '2XL', 'is_active' => true],
-            ['nama' => '3XL', 'is_active' => true],
-            ['nama' => '4XL', 'is_active' => true],
+            ['nama' => 'A', 'panjang' => null, 'lebar' => 33, 'is_active' => true],
+            ['nama' => 'B', 'panjang' => null, 'lebar' => 35, 'is_active' => true],
+            ['nama' => 'C', 'panjang' => null, 'lebar' => 38, 'is_active' => true],
+            ['nama' => 'D', 'panjang' => null, 'lebar' => 40, 'is_active' => true],
+            ['nama' => 'E', 'panjang' => null, 'lebar' => 43, 'is_active' => true],
+            ['nama' => 'XS', 'panjang' => 64, 'lebar' => 45, 'is_active' => true],
+            ['nama' => 'S', 'panjang' => 66, 'lebar' => 47, 'is_active' => true],
+            ['nama' => 'M', 'panjang' => 69, 'lebar' => 49, 'is_active' => true],
+            ['nama' => 'L', 'panjang' => 72, 'lebar' => 51, 'is_active' => true],
+            ['nama' => 'XL', 'panjang' => 75, 'lebar' => 53, 'is_active' => true],
+            ['nama' => '2XL', 'panjang' => 78, 'lebar' => 55, 'is_active' => true],
+            ['nama' => '3XL', 'panjang' => 81, 'lebar' => 57, 'is_active' => true],
         ];
 
         foreach ($ukuran as $data) {

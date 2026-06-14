@@ -23,6 +23,7 @@ class PesananController extends Controller
 
     public function antreanProduksi()
     {
+        // Auto-promote: pesanan dengan pembayaran terkonfirmasi → Dalam Produksi
         Pesanan::whereNull('status')
             ->whereHas('pembayaran', function ($q) {
                 $q->where('status', '=', 'Terkonfirmasi');

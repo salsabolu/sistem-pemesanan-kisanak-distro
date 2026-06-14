@@ -34,8 +34,6 @@ const role = computed(() => {
             <div class="text-black/50 text-xs uppercase mb-1">Aksi Cepat</div>
             <Link href="/dasbor" class="text-black py-1 hover:underline"
                 :class="{ 'font-medium': currentUrl.startsWith('/dasbor') }">Dasbor</Link>
-            <Link href="/produksi/pesanan-baru" class="text-black py-1 hover:underline"
-                :class="{ 'font-medium': currentUrl.startsWith('/produksi/pesanan-baru') }">Pesanan Baru</Link>
             <Link href="/produksi/konfirmasi-pembayaran" class="text-black py-1 hover:underline"
                 :class="{ 'font-medium': currentUrl.startsWith('/produksi/konfirmasi-pembayaran') }">Konfirmasi
                 Pembayaran
@@ -59,6 +57,8 @@ const role = computed(() => {
                 :class="{ 'font-medium': currentUrl.startsWith('/master/warna') }">Warna</Link>
             <Link href="/master/ukuran" class="text-black py-1 hover:underline pl-3"
                 :class="{ 'font-medium': currentUrl.startsWith('/master/ukuran') }">Ukuran</Link>
+            <Link href="/master/bahan" class="text-black py-1 hover:underline pl-3"
+                :class="{ 'font-medium': currentUrl.startsWith('/master/bahan') }">Bahan</Link>
             <Link href="/master/produk" class="text-black py-1 hover:underline pl-3"
                 :class="{ 'font-medium': currentUrl.startsWith('/master/produk') }">Produk</Link>
 

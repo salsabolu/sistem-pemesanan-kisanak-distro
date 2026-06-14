@@ -7,8 +7,7 @@ type PesananDB = {
     id: number;
     id_pembeli: number;
     total: number;
-    prioritas: string;
-    status: string;
+    status: string | null;
     created_at?: string | null;
     tenggat_waktu?: string | null;
     estimasi_selesai?: string | null;
@@ -32,8 +31,7 @@ const props = defineProps<{
     pesanan?: PaginatedResponse;
 }>();
 
-const prioritasOptions = ['Normal', 'Tinggi'] as const;
-const statusOptions = ['Pesanan Baru', 'Dalam Produksi', 'Selesai', 'Dibatalkan'] as const;
+const statusOptions = ['Dalam Produksi', 'Selesai', 'Dibatalkan'] as const;
 
 const currentPage = computed(() => props.pesanan?.current_page ?? 1);
 const totalPages = computed(() => props.pesanan?.last_page ?? 1);
@@ -68,8 +66,7 @@ const items = computed(() => {
             totalHarga: formatRupiah(p.total),
             tenggatWaktu: formatDate(p.tenggat_waktu ?? null),
             estimasiSelesai: formatDate(p.estimasi_selesai ?? null),
-            prioritas: p.prioritas as 'Normal' | 'Tinggi',
-            status: p.status as 'Pesanan Baru' | 'Dalam Produksi' | 'Selesai' | 'Dibatalkan',
+            status: p.status as 'Dalam Produksi' | 'Selesai' | 'Dibatalkan' | null,
             produk: p.produk ?? [],
         };
     });
@@ -78,7 +75,6 @@ const items = computed(() => {
 function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(Math.max(0, Math.round(value)))}`;
 }
-
 
 function formatTime(value: string | null): string {
     if (!value) return '-';
@@ -96,31 +92,22 @@ function formatDate(value: string | null): string {
     return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
-function updatePrioritas(item: any, event: Event) {
-    const prioritas = (event.target as HTMLSelectElement).value as (typeof prioritasOptions)[number];
-    router.patch(`/pesanan/pesanan/${item.id}/prioritas`, { prioritas }, { preserveScroll: true });
-}
-
 function updateStatus(item: any, event: Event) {
     const status = (event.target as HTMLSelectElement).value as (typeof statusOptions)[number];
     router.patch(`/pesanan/pesanan/${item.id}/status`, { status }, { preserveScroll: true });
 }
 
-function prioritasColor(prioritas: string): string {
-    switch (prioritas) {
-        case 'Tinggi': return 'bg-red text-white';
-        default: return 'bg-yellow text-black';
-    }
-}
-
-function statusColor(status: string): string {
+function statusColor(status: string | null): string {
     switch (status) {
-        case 'Pesanan Baru': return 'bg-yellow text-black';
         case 'Dalam Produksi': return 'bg-orange text-white';
         case 'Selesai': return 'bg-green text-white';
         case 'Dibatalkan': return 'bg-red text-white';
-        default: return 'bg-yellow text-black';
+        default: return 'bg-yellow text-black'; // null = belum diproses
     }
+}
+
+function statusLabel(status: string | null): string {
+    return status ?? 'Menunggu';
 }
 
 function goToPage(page: number) {
@@ -177,13 +164,12 @@ function paginationPages(): (number | string)[] {
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Tenggat Waktu</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Estimasi Selesai
                             </th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Prioritas</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="10" class="px-3 py-6 text-center text-black/50">Belum ada pesanan dalam
+                            <td colspan="9" class="px-3 py-6 text-center text-black/50">Belum ada pesanan dalam
                                 produksi.</td>
                         </tr>
                         <tr v-for="item in items" :key="item.id"
@@ -214,14 +200,10 @@ function paginationPages(): (number | string)[] {
                             <td class="px-3 py-3 text-black text-sm">{{ item.tenggatWaktu }}</td>
                             <td class="px-3 py-3 text-black text-sm">{{ item.estimasiSelesai }}</td>
                             <td class="px-3 py-3">
-                                <select class="px-3 py-1 rounded-full text-xs" :class="prioritasColor(item.prioritas)"
-                                    :value="item.prioritas" @click.stop @change="updatePrioritas(item, $event)">
-                                    <option v-for="opt in prioritasOptions" :key="opt" :value="opt">{{ opt }}</option>
-                                </select>
-                            </td>
-                            <td class="px-3 py-3">
                                 <select class="px-3 py-1 rounded-full text-xs" :class="statusColor(item.status)"
-                                    :value="item.status" @click.stop @change="updateStatus(item, $event)">
+                                    :value="item.status ?? ''" @click.stop @change="updateStatus(item, $event)"
+                                    :disabled="item.status === 'Selesai'">
+                                    <option value="" disabled>Menunggu</option>
                                     <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
                                 </select>
                             </td>

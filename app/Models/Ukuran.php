@@ -18,10 +18,14 @@ class Ukuran extends Model
 
     protected $fillable = [
         'nama',
+        'panjang',
+        'lebar',
         'is_active',
     ];
 
     protected $casts = [
+        'panjang'   => 'integer',
+        'lebar'     => 'integer',
         'is_active' => 'boolean',
     ];
 

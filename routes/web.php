@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\BahanController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\WarnaController;
 use App\Http\Controllers\UkuranController;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dasbor', [DasborController::class, 'index'])->name('dasbor');
 });
 
+// Stok
 Route::get('/produksi/stok-menipis', [ProdukController::class, 'stokMenipis'])->name('produksi.stok-menipis');
 
 // Pembayaran
@@ -79,10 +81,18 @@ Route::post('/master/ukuran', [UkuranController::class, 'store'])->name('master.
 Route::put('/master/ukuran/{ukuran}', [UkuranController::class, 'update'])->name('master.ukuran.update');
 Route::delete('/master/ukuran/{ukuran}', [UkuranController::class, 'destroy'])->name('master.ukuran.destroy');
 
+// Master - Bahan
+Route::get('/master/bahan', [BahanController::class, 'index'])->name('master.bahan');
+Route::post('/master/bahan', [BahanController::class, 'store'])->name('master.bahan.store');
+Route::put('/master/bahan/{bahan}', [BahanController::class, 'update'])->name('master.bahan.update');
+Route::patch('/master/bahan/{bahan}/status', [BahanController::class, 'updateStatus'])->name('master.bahan.update-status');
+Route::delete('/master/bahan/{bahan}', [BahanController::class, 'destroy'])->name('master.bahan.destroy');
+
 // Master - Produk
 Route::get('/master/produk', [ProdukController::class, 'index'])->name('master.produk');
 Route::post('/master/produk', [ProdukController::class, 'store'])->name('master.produk.store');
 Route::put('/master/produk/{produk}', [ProdukController::class, 'update'])->name('master.produk.update');
+Route::patch('/master/produk/{produk}/status', [ProdukController::class, 'updateStatus'])->name('master.produk.update-status');
 Route::delete('/master/produk/{produk}', [ProdukController::class, 'destroy'])->name('master.produk.destroy');
 
 Route::get('welcome', function () {

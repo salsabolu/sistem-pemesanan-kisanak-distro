@@ -12,8 +12,8 @@ class DistroSeeder extends Seeder
             [
                 'nama' => 'Kisanak Distro',
                 'alamat' => 'Jl. Sersan Harun No.23, Kartoharjo, Kecamatan Nganjuk, Kabupaten Nganjuk, Jawa Timur 64416',
-                'jam_buka' => '07.30',
-                'jam_tutup' => '17.00',
+                'jam_buka' => '07:30',
+                'jam_tutup' => '17:00',
                 'hari_buka' => 'Senin - Sabtu',
                 'hari_tutup' => 'Minggu',
                 'whatsapp' => '081233843999',
