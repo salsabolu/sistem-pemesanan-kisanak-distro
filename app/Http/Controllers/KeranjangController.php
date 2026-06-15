@@ -7,6 +7,7 @@ use App\Models\Pesanan;
 use App\Models\Produk;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Distro;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -27,8 +28,11 @@ class KeranjangController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $distro = Distro::first();
+
         return Inertia::render('Keranjang', [
             'pesananAktif' => $pesanan,
+            'distro' => $distro,
         ]);
     }
 

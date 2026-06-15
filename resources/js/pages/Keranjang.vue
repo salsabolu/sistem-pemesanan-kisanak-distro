@@ -6,12 +6,16 @@ import {
     PhUserCircle,
     PhTrash,
     PhInfo,
+    PhCopy,
 } from '@phosphor-icons/vue';
 import { computed, ref, onMounted } from 'vue';
 import Footer from '@/components/Footer.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import NavIcon from '@/components/NavIcon.vue';
 import RegisterModal from '@/components/RegisterModal.vue';
+import EmptyCart from '@/components/EmptyCart.vue';
+import PesananSection from '@/components/PesananSection.vue';
+import CheckoutConfirmationModal from '@/components/CheckoutConfirmationModal.vue';
 
 type CartItem = {
     id: string;
@@ -38,8 +42,14 @@ type PesananAktifItem = {
     }>;
 };
 
+type DistroType = {
+    rekening_bca: string;
+    rekening_bri: string;
+};
+
 const props = defineProps<{
     pesananAktif?: PesananAktifItem[];
+    distro?: DistroType;
 }>();
 
 const items = ref<CartItem[]>([]);
@@ -68,6 +78,16 @@ const isLoginOpen = ref(false);
 const isRegisterOpen = ref(false);
 const isCheckoutConfirmOpen = ref(false);
 const tenggatWaktu = ref<string>('');
+const buktiPembayaran = ref<File | null>(null);
+
+function handleFileChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+        buktiPembayaran.value = target.files[0];
+    } else {
+        buktiPembayaran.value = null;
+    }
+}
 
 function openLogin() {
     isProfileMenuOpen.value = false;
@@ -137,30 +157,47 @@ function handleCheckoutClick() {
         return;
     }
 
+    if (!buktiPembayaran.value) {
+        alert('Bukti pembayaran harus diupload');
+        return;
+    }
+
     isCheckoutConfirmOpen.value = true;
 }
 
 function submitOrder() {
     isCheckoutConfirmOpen.value = false;
 
-    const payload = {
-        tenggat_waktu: tenggatWaktu.value,
-        items: items.value.map(it => ({
-            productId: it.productId,
-            color: it.color,
-            size: it.size,
-            quantity: it.quantity,
-            unitPrice: it.unitPrice,
-        })),
-    };
+    const formData = new FormData();
+    formData.append('tenggat_waktu', tenggatWaktu.value);
+    if (buktiPembayaran.value) {
+        formData.append('bukti_pembayaran', buktiPembayaran.value);
+    }
+    
+    items.value.forEach((it, index) => {
+        formData.append(`items[${index}][productId]`, String(it.productId));
+        if (it.color) formData.append(`items[${index}][color]`, it.color);
+        formData.append(`items[${index}][size]`, it.size);
+        formData.append(`items[${index}][quantity]`, String(it.quantity));
+        formData.append(`items[${index}][unitPrice]`, String(it.unitPrice));
+    });
 
-    router.post('/keranjang/checkout', payload, {
+    router.post('/keranjang/checkout', formData, {
         onSuccess: () => {
             localStorage.removeItem('kisanak_cart');
             items.value = [];
             tenggatWaktu.value = '';
+            buktiPembayaran.value = null;
             alert('Pesanan berhasil dibuat!');
         },
+    });
+}
+
+function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Nomor rekening berhasil disalin!');
+    }).catch(err => {
+        console.error('Gagal menyalin text: ', err);
     });
 }
 </script>
@@ -217,9 +254,7 @@ function submitOrder() {
             <div class="text-black text-sm font-medium uppercase">Keranjang</div>
 
             <!-- Empty Cart -->
-            <div v-if="items.length === 0" class="mt-10 text-center text-black/50 text-sm">
-                Keranjang masih kosong. <Link href="/katalog" class="underline text-black">Belanja sekarang</Link>
-            </div>
+            <EmptyCart v-if="items.length === 0" />
 
             <section v-else class="mt-5 grid grid-cols-3 gap-10">
                 <div class="col-span-2 bg-white" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08)">
@@ -269,6 +304,28 @@ function submitOrder() {
                         <input v-model="tenggatWaktu" type="date"
                             class="mt-2 w-full border border-black px-3 py-2 text-sm text-black" />
                     </div>
+                    
+                    <div class="mt-4">
+                        <div class="text-black text-xs uppercase">Bukti Pembayaran</div>
+                        <input type="file" accept="image/png, image/jpeg, image/jpg, application/pdf" @change="handleFileChange"
+                            class="mt-2 w-full border border-black px-3 py-2 text-sm text-black file:mr-4 file:py-1 file:px-2 file:border-0 file:text-xs file:bg-black file:text-white" />
+                    </div>
+
+                    <div v-if="distro" class="mt-4 p-3 bg-black/5 text-xs text-black border border-black/10">
+                        <div class="font-medium uppercase mb-1">Transfer ke Rekening:</div>
+                        <div class="flex items-center justify-between py-1 border-b border-black/5 last:border-0">
+                            <div>BCA: {{ distro.rekening_bca }}</div>
+                            <button type="button" @click="copyToClipboard(distro.rekening_bca)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BCA">
+                                <PhCopy :size="16" />
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between py-1">
+                            <div>BRI: {{ distro.rekening_bri }}</div>
+                            <button type="button" @click="copyToClipboard(distro.rekening_bri)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BRI">
+                                <PhCopy :size="16" />
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="mt-4 text-black text-[10px] italic">*Pajak sudah termasuk</div>
 
@@ -285,59 +342,7 @@ function submitOrder() {
             </section>
 
             <!-- Pesanan Section (from database: Dalam Produksi + Pembayaran Terkonfirmasi) -->
-            <section v-if="pesananAktif && pesananAktif.length > 0" class="mt-10">
-                <div class="mt-5 bg-black text-white p-6" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12)">
-                    <div class="text-white text-sm font-normal uppercase">Pesanan</div>
-                    <div v-for="order in pesananAktif" :key="order.id" class="mt-4 grid grid-cols-[1fr_auto] gap-10">
-                        <div class="min-w-0">
-                            <div class="grid gap-4">
-                                <div v-for="prod in (order.produk ?? [])" :key="prod.id"
-                                    class="grid grid-cols-[160px_1fr] gap-6">
-                                    <div class="aspect-square w-40 overflow-hidden">
-                                        <img :src="(prod.gambar && prod.gambar !== '-') ? prod.gambar : '/images/kaos-1.png'"
-                                            :alt="prod.nama ?? 'Produk'" class="h-full w-full object-cover" />
-                                    </div>
-
-                                    <div class="min-w-0">
-                                        <div class="text-sm font-medium uppercase leading-snug">{{ prod.nama ?? '-' }}</div>
-                                        <div class="mt-1 text-xs uppercase">
-                                            {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
-                                        </div>
-                                        <div class="mt-1 text-xs">
-                                            {{ prod.pivot?.jumlah ?? 0 }} /
-                                            {{ formatRupiah(unitPriceFromPivot(prod.pivot?.subtotal ?? 0, prod.pivot?.jumlah ?? 0)) }}
-                                        </div>
-                                        <div class="mt-1 text-xs">{{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-4 border-t border-white/20">
-                                <div class="text-xs">{{ formatRupiah(order.total) }}</div>
-                                <div class="mt-2 text-white/70 text-xs uppercase">
-                                    Tenggat Waktu: {{ formatDate(order.tenggat_waktu) }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-start justify-end">
-                            <div class="w-72">
-                                <div class="grid gap-1">
-                                    <NavIcon class="bg-white" :icon="PhInfo" ariaLabel="Informasi" :size="22" />
-                                    <div class="grid grid-cols-2">
-                                        <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black">Status:</div>
-                                        <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black text-right">{{ order.status.toUpperCase() }}</div>
-                                    </div>
-                                    <div class="grid grid-cols-2">
-                                        <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black">Estimasi Selesai:</div>
-                                        <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black text-right">{{ formatDate(order.estimasi_selesai) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <PesananSection v-if="pesananAktif && pesananAktif.length > 0" :pesananAktif="pesananAktif" />
         </main>
 
         <Footer />
@@ -346,22 +351,6 @@ function submitOrder() {
         <RegisterModal :open="isRegisterOpen" @close="closeRegister" />
 
         <!-- Checkout Confirmation Modal -->
-        <div v-if="isCheckoutConfirmOpen" class="fixed inset-0 z-50 flex items-center justify-center">
-            <div class="absolute inset-0 bg-black/40" @click="isCheckoutConfirmOpen = false" />
-            <div class="relative bg-white text-black p-6 w-full max-w-sm mx-4" style="box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15)">
-                <h3 class="text-lg font-medium uppercase">Konfirmasi Pesanan</h3>
-                <p class="mt-1 text-sm">Apakah data pesanan sudah sesuai?</p>
-                <div class="mt-4 flex gap-4 justify-end">
-                    <button type="button" class="px-6 py-2 text-sm border border-black bg-white text-black hover:bg-black/5"
-                        @click="isCheckoutConfirmOpen = false">
-                        Batal
-                    </button>
-                    <button type="button" class="px-6 py-2 text-sm bg-black text-white hover:bg-black/90"
-                        @click="submitOrder">
-                        Pesan Sekarang
-                    </button>
-                </div>
-            </div>
-        </div>
+        <CheckoutConfirmationModal :open="isCheckoutConfirmOpen" @close="isCheckoutConfirmOpen = false" @confirm="submitOrder" />
     </div>
 </template>
