@@ -133,16 +133,7 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Kategori</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Warna</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Ukuran</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok Min</th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
-                                <div>Durasi Produksi</div>
-                                <div class="text-black/40 text-[10px] normal-case">Menit</div>
-                            </th>
-                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
-                                <div>Durasi Restok</div>
-                                <div class="text-black/40 text-[10px] normal-case">Hari</div>
-                            </th>
+                            <!-- <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th> -->
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Status</th>
                             <th class="text-center px-3 py-3 text-black font-medium text-xs uppercase">Aksi</th>
                         </tr>
@@ -159,10 +150,7 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.kategori?.nama ?? '-' }}</td>
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.warna?.nama ?? '-' }}</td>
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.ukuran?.nama ?? '-' }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.stok }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.stok_minimum }}</td>
-                            <td class="px-3 py-3 text-black">{{ item.durasi_produksi }}</td>
-                            <td class="px-3 py-3 text-black">{{ Math.round(item.durasi_restok / 1440) }}</td>
+                            <!-- <td class="px-3 py-3 text-black">{{ item.stok }}</td> -->
                             <td class="px-3 py-3">
                                 <span class="px-2 py-0.5 rounded-full text-xs" :class="statusColor(item.is_active)">
                                     {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
