@@ -13,7 +13,7 @@ const emit = defineEmits<{ (e: 'close'): void; (e: 'open-register'): void }>();
 const showPassword = ref(false);
 
 const form = useForm({
-    email: '',
+    whatsapp: '',
     password: '',
     remember: false,
 });
@@ -45,14 +45,14 @@ function submit() {
             <form @submit.prevent="submit" class="mt-4 space-y-3">
                 <div>
                     <input
-                        v-model="form.email"
-                        type="email"
-                        autocomplete="email"
-                        placeholder="Email"
+                        v-model="form.whatsapp"
+                        type="text"
+                        autocomplete="tel"
+                        placeholder="No. WhatsApp"
                         class="bg-white text-black w-full px-3 py-2 text-sm"
                         required
                     />
-                    <div v-if="form.errors.email" class="text-red-500 text-xs mt-1">{{ form.errors.email }}</div>
+                    <div v-if="form.errors.whatsapp" class="text-red-500 text-xs mt-1">{{ form.errors.whatsapp }}</div>
                 </div>
 
                 <div>
