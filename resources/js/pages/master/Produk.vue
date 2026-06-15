@@ -3,7 +3,7 @@ import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import {
     PhTrash,
 } from '@phosphor-icons/vue';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
 
 type BahanData = {
@@ -68,10 +68,25 @@ function onFileChange(e: Event) {
     }
 }
 
+const isNameManuallyEdited = ref(false);
+
+watch(() => form.id_bahan, (newVal) => {
+    if (editingItem.value) return;
+    if (isNameManuallyEdited.value) return;
+
+    const selectedBahan = bahanList.value.find(b => String(b.id) === newVal);
+    if (selectedBahan) {
+        form.nama = selectedBahan.nama;
+    } else {
+        form.nama = '';
+    }
+});
+
 function openTambah() {
     editingItem.value = null; form.reset(); form.clearErrors();
     form.is_active = true;
     gambarFile.value = null; gambarPreview.value = null;
+    isNameManuallyEdited.value = false;
     showModal.value = true;
 }
 
@@ -219,7 +234,7 @@ const bahanList = computed(() => props.bahan ?? []);
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="col-span-2">
                         <label class="block text-black text-sm mb-1">Nama Produk <span class="text-red-500">*</span></label>
-                        <input v-model="form.nama" type="text"
+                        <input v-model="form.nama" type="text" @input="isNameManuallyEdited = true"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
                         <div v-if="form.errors.nama" class="text-red-500 text-xs mt-1">{{ form.errors.nama }}</div>

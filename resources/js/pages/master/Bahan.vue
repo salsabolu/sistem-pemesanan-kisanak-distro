@@ -4,7 +4,7 @@ import {
     PhPencilSimple,
     PhTrash,
 } from '@phosphor-icons/vue';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
 
 type BahanData = {
@@ -58,9 +58,29 @@ const durasiRestokHari = computed({
     }
 });
 
+const isNameManuallyEdited = ref(false);
+
+watch([() => form.id_kategori, () => form.id_warna], () => {
+    if (editingItem.value) return;
+    if (isNameManuallyEdited.value) return;
+
+    const selectedKategori = kategoriList.value.find(k => String(k.id) === form.id_kategori);
+    const selectedWarna = warnaList.value.find(w => String(w.id) === form.id_warna);
+
+    let parts: string[] = [];
+    if (selectedKategori) {
+        parts.push(selectedKategori.nama);
+    }
+    if (selectedWarna) {
+        parts.push(selectedWarna.nama);
+    }
+    form.nama = parts.join(' ');
+});
+
 function openTambah() {
     editingItem.value = null; form.reset(); form.clearErrors();
     form.is_active = true;
+    isNameManuallyEdited.value = false;
     showModal.value = true;
 }
 
@@ -197,7 +217,7 @@ const ukuranList = computed(() => props.ukuran ?? []);
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="col-span-2">
                         <label class="block text-black text-sm mb-1">Nama Bahan <span class="text-red-500">*</span></label>
-                        <input v-model="form.nama" type="text"
+                        <input v-model="form.nama" type="text" @input="isNameManuallyEdited = true"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
                         <div v-if="form.errors.nama" class="text-red-500 text-xs mt-1">{{ form.errors.nama }}</div>
