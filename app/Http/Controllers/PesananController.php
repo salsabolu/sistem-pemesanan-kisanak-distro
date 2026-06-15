@@ -12,7 +12,10 @@ class PesananController extends Controller
     public function index()
     {
         $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
-        ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
+            ->whereHas('pembayaran', function ($q) {
+                $q->where('status', 'Terkonfirmasi');
+            })
+            ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
             ->orderBy('created_at', 'desc') // FCFS
             ->paginate(10);
 
