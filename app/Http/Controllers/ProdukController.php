@@ -84,18 +84,18 @@ class ProdukController extends Controller
                 $q->where('id_kategori', $kategoriId);
             })
             ->where('is_active', true)
-            ->with(['bahan.warna', 'bahan.ukuran'])
+            ->with(['warna', 'ukuran'])
             ->get();
         } else {
             $variants = Produk::where('nama', '=', $produk->nama)
                 ->where('is_active', true)
-                ->with(['bahan.warna', 'bahan.ukuran'])
+                ->with(['warna', 'ukuran'])
                 ->get();
         }
 
         // Get all unique colors and sizes for products with the same name
-        $warnaOptions = $variants->pluck('bahan.warna.nama')->filter()->unique()->values();
-        $ukuranOptions = $variants->pluck('bahan.ukuran.nama')->filter()->unique()->values();
+        $warnaOptions = $variants->pluck('warna.nama')->filter()->unique()->values();
+        $ukuranOptions = $variants->pluck('ukuran.nama')->filter()->unique()->values();
 
         return Inertia::render('produk/DetailProduk', [
             'produk' => $produk,

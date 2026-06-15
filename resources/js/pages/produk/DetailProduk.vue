@@ -86,7 +86,7 @@ const selectedVariant = computed<ProdukVariant | undefined>(() => {
     return variants.value[0];
 });
 
-const productName = computed(() => props.produk?.nama ?? 'Kaos Polos Dewasa Cotton Combed 30s');
+const productName = computed(() => props.produk?.bahan?.kategori?.nama ?? props.produk?.nama ?? 'Kaos Polos Dewasa Cotton Combed 30s');
 
 function toUnitPrice(value: unknown, fallback = 40000): number {
     const n = typeof value === 'number' ? value : Number(value);
@@ -103,8 +103,9 @@ const productPrice = computed(() => {
 });
 const productDescription = computed(() => {
     const d = selectedVariant.value?.deskripsi ?? props.produk?.deskripsi;
-    return (d && d !== '-') ? d : 'Kaos polos ukuran dewasa ini menggunakan bahan cotton combed dengan gramasi 30s yang membuat kaos terasa ringan. Anda tidak akan merasa kepanasan meskipun dipakai di bawah terik matahari. Kaos ini cocok untuk penggunaan sehari-hari.';
+    return d && d !== '-' ? d : '';
 });
+
 const productImage = computed(() => {
     const g = selectedVariant.value?.gambar ?? props.produk?.gambar;
     return (g && g !== '-') ? g : '/images/kaos-1.png';
@@ -129,7 +130,17 @@ const colorOptions = computed(() => {
 const hasWarna = computed(() => colorOptions.value.length > 0);
 const allSizeOptions = computed(() => {
     if (variants.value.length > 0) {
-        return Array.from(new Set(variants.value.map((v) => v.ukuran?.nama).filter(Boolean) as string[]));
+        const uniqueSizes = new Map<string, number>();
+        variants.value.forEach((v) => {
+            if (v.ukuran?.nama && v.ukuran?.id) {
+                if (!uniqueSizes.has(v.ukuran.nama)) {
+                    uniqueSizes.set(v.ukuran.nama, v.ukuran.id);
+                }
+            }
+        });
+        return Array.from(uniqueSizes.entries())
+            .sort((a, b) => a[1] - b[1])
+            .map(entry => entry[0]);
     }
     return props.ukuranOptions ?? ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 });
@@ -138,12 +149,17 @@ const sizeOptions = computed(() => {
     if (variants.value.length === 0) return allSizeOptions.value;
     if (!selectedColor.value) return allSizeOptions.value;
 
-    const sizes = variants.value
-        .filter((v) => (v.warna?.nama ?? '') === selectedColor.value)
-        .map((v) => v.ukuran?.nama)
-        .filter(Boolean) as string[];
-
-    return Array.from(new Set(sizes));
+    const uniqueSizes = new Map<string, number>();
+    variants.value.forEach((v) => {
+        if ((v.warna?.nama ?? '') === selectedColor.value && v.ukuran?.nama && v.ukuran?.id) {
+            if (!uniqueSizes.has(v.ukuran.nama)) {
+                uniqueSizes.set(v.ukuran.nama, v.ukuran.id);
+            }
+        }
+    });
+    return Array.from(uniqueSizes.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(entry => entry[0]);
 });
 
 watch(
@@ -304,18 +320,6 @@ const subtotalText = computed(() => {
                     <div class="aspect-square w-full overflow-hidden">
                         <img :src="productImage" :alt="productName" class="h-full w-full object-cover" />
                     </div>
-
-                    <!-- <div class="mt-4 grid grid-cols-3 gap-4">
-                        <div class="aspect-square w-full overflow-hidden">
-                            <img :src="productImage" alt="Foto 1" class="h-full w-full object-cover" />
-                        </div>
-                        <div class="aspect-square w-full overflow-hidden">
-                            <img :src="productImage" alt="Foto 2" class="h-full w-full object-cover" />
-                        </div>
-                        <div class="aspect-square w-full overflow-hidden">
-                            <img :src="productImage" alt="Foto 3" class="h-full w-full object-cover" />
-                        </div>
-                    </div> -->
                 </div>
 
                 <div class="text-black max-w-3/4">
