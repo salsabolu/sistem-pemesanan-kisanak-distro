@@ -32,9 +32,9 @@ class ProdukController extends Controller
         if ($request->filled('search')) {
             $search = strtolower($request->search);
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"])
+                $q->whereRaw('LOWER(produk.nama) LIKE ?', ["%{$search}%"])
                     ->orWhereHas('kategori', function ($q2) use ($search) {
-                        $q2->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"]);
+                        $q2->whereRaw('LOWER(kategori.nama) LIKE ?', ["%{$search}%"]);
                     });
             });
         }
