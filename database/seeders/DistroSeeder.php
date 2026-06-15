@@ -16,6 +16,8 @@ class DistroSeeder extends Seeder
                 'jam_tutup' => '17:00',
                 'hari_buka' => 'Senin - Sabtu',
                 'hari_tutup' => 'Minggu',
+                'rekening_bca' => '7601690088',
+                'rekening_bri' => '136501008552503',
                 'whatsapp' => '081233843999',
                 'instagram' => 'https://www.instagram.com/kisanakdistro?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==',
                 'tiktok' => 'https://www.tiktok.com/@kisanak.distro?is_from_webapp=1&sender_device=pc'

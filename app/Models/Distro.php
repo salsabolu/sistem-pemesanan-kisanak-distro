@@ -17,6 +17,8 @@ class Distro extends Model
         'jam_tutup',
         'hari_buka',
         'hari_tutup',
+        'rekening_bca',
+        'rekening_bri',
         'whatsapp',
         'instagram',
         'tiktok',

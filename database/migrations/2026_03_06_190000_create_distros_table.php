@@ -19,6 +19,8 @@ return new class extends Migration
             $table->time('jam_tutup');
             $table->string('hari_buka', 50);
             $table->string('hari_tutup', 50);
+            $table->string('rekening_bca', 20);
+            $table->string('rekening_bri', 20);
             $table->string('whatsapp', 20);
             $table->string('instagram', 255);
             $table->string('tiktok', 255);
