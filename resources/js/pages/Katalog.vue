@@ -5,7 +5,7 @@ import {
     PhShoppingCartSimple,
     PhUserCircle,
 } from '@phosphor-icons/vue';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
 import CataloguePreview from '@/components/CataloguePreview.vue';
 import Footer from '@/components/Footer.vue';
@@ -79,8 +79,9 @@ watch(
 
 const searchBarRef = ref<InstanceType<typeof SearchBar> | null>(null);
 
-function openSearch() {
+async function openSearch() {
     isSearchOpen.value = true;
+    await nextTick();
     searchBarRef.value?.focus();
 }
 
@@ -91,14 +92,6 @@ function handleSearch(val: string) {
     router.get('/katalog', { search: val }, { preserveState: true, replace: true });
 }
 
-const cartPreview = {
-    productName: 'Kaos Polos Dewasa Cotton Combed 30s',
-    color: 'Putih',
-    size: 'M',
-    quantity: 2,
-    subtotal: 'Rp80.000',
-    imageSrc: '/images/kaos-1.png',
-};
 
 function openLogin() {
     isProfileMenuOpen.value = false;
@@ -192,8 +185,6 @@ function closeRegister() {
         <LoginModal :open="isLoginOpen" @close="closeLogin" @open-register="openRegister" />
         <RegisterModal :open="isRegisterOpen" @close="closeRegister" />
 
-        <CartDrawer :open="isConfirmOpen" :productName="cartPreview.productName" :color="cartPreview.color"
-            :size="cartPreview.size" :quantity="cartPreview.quantity" :subtotal="cartPreview.subtotal"
-            :imageSrc="cartPreview.imageSrc" @close="isConfirmOpen = false" />
+        <CartDrawer :open="isConfirmOpen" @close="isConfirmOpen = false" />
     </div>
 </template>
