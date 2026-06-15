@@ -4,9 +4,6 @@ import {
     PhMagnifyingGlass,
     PhShoppingCartSimple,
     PhUserCircle,
-    PhTrash,
-    PhInfo,
-    PhCopy,
 } from '@phosphor-icons/vue';
 import { computed, ref, onMounted } from 'vue';
 import Footer from '@/components/Footer.vue';
@@ -14,7 +11,9 @@ import LoginModal from '@/components/LoginModal.vue';
 import NavIcon from '@/components/NavIcon.vue';
 import RegisterModal from '@/components/RegisterModal.vue';
 import EmptyCart from '@/components/EmptyCart.vue';
-import PesananSection from '@/components/PesananSection.vue';
+import OrderItemList from '@/components/OrderItemList.vue';
+import OrderForm from '@/components/OrderForm.vue';
+import OrderHistoryList from '@/components/OrderHistoryList.vue';
 import CheckoutConfirmationModal from '@/components/CheckoutConfirmationModal.vue';
 
 type CartItem = {
@@ -77,17 +76,9 @@ const isProfileMenuOpen = ref(false);
 const isLoginOpen = ref(false);
 const isRegisterOpen = ref(false);
 const isCheckoutConfirmOpen = ref(false);
-const tenggatWaktu = ref<string>('');
-const buktiPembayaran = ref<File | null>(null);
 
-function handleFileChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-        buktiPembayaran.value = target.files[0];
-    } else {
-        buktiPembayaran.value = null;
-    }
-}
+const tenggatWaktu = ref('');
+const buktiPembayaran = ref<File | null>(null);
 
 function openLogin() {
     isProfileMenuOpen.value = false;
@@ -107,15 +98,6 @@ function closeRegister() { isRegisterOpen.value = false; }
 function formatRupiah(value: number): string {
     const rounded = Math.max(0, Math.round(value));
     return `Rp${new Intl.NumberFormat('id-ID').format(rounded)}`;
-}
-
-function formatDate(value: string | null | undefined): string {
-    if (!value) return '-';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return String(value);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
 function decQty(item: CartItem) {
@@ -139,29 +121,26 @@ const totalValue = computed(() => {
 
 const totalText = computed(() => formatRupiah(totalValue.value));
 
-function unitPriceFromPivot(subtotal: number, qty: number): number {
-    const safeQty = Math.max(1, Math.round(qty || 0));
-    return Math.round((subtotal || 0) / safeQty);
-}
-
 const pesananAktif = computed(() => props.pesananAktif ?? []);
 
-function handleCheckoutClick() {
+function handleCheckout(payload: { tenggatWaktu: string, buktiPembayaran: File | null }) {
     if (items.value.length === 0) {
         alert('Keranjang masih kosong');
         return;
     }
 
-    if (!tenggatWaktu.value) {
+    if (!payload.tenggatWaktu) {
         alert('Tenggat waktu harus diisi');
         return;
     }
 
-    if (!buktiPembayaran.value) {
+    if (!payload.buktiPembayaran) {
         alert('Bukti pembayaran harus diupload');
         return;
     }
 
+    tenggatWaktu.value = payload.tenggatWaktu;
+    buktiPembayaran.value = payload.buktiPembayaran;
     isCheckoutConfirmOpen.value = true;
 }
 
@@ -190,14 +169,6 @@ function submitOrder() {
             buktiPembayaran.value = null;
             alert('Pesanan berhasil dibuat!');
         },
-    });
-}
-
-function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-        alert('Nomor rekening berhasil disalin!');
-    }).catch(err => {
-        console.error('Gagal menyalin text: ', err);
     });
 }
 </script>
@@ -257,92 +228,12 @@ function copyToClipboard(text: string) {
             <EmptyCart v-if="items.length === 0" />
 
             <section v-else class="mt-5 grid grid-cols-3 gap-10">
-                <div class="col-span-2 bg-white" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08)">
-                    <div class="divide-y divide-white-hover">
-                        <div v-for="item in items" :key="item.id" class="grid grid-cols-3 gap-1 p-6">
-                            <div class="aspect-square w-40 overflow-hidden border border-black">
-                                <img :src="item.imageSrc" :alt="item.productName" class="h-full w-full object-cover" />
-                            </div>
-
-                            <div class="min-w-0">
-                                <div class="text-black text-sm font-medium uppercase leading-snug">
-                                    {{ item.productName }}
-                                </div>
-                                <div class="mt-2 text-black text-xs uppercase">
-                                    {{ item.color ? item.color.toUpperCase() : 'TIDAK ADA' }} / {{ item.size ? item.size.toUpperCase() : 'TIDAK ADA' }}
-                                </div>
-                                <div class="mt-2 text-black text-sm">{{ item.unitPriceText }}</div>
-
-                                <div class="mt-3">
-                                    <div class="text-black text-xs uppercase">Jumlah</div>
-                                    <div class="mt-2 inline-flex items-center" :style="{ border: '1px solid black' }">
-                                        <button type="button" class="text-black h-8 w-8"
-                                            @click="decQty(item)">-</button>
-                                        <div class="h-8 w-10 text-black text-center text-sm leading-8"
-                                            :style="{ borderLeft: '1px solid black', borderRight: '1px solid black' }">
-                                            {{ item.quantity }}
-                                        </div>
-                                        <button type="button" class="text-black h-8 w-8"
-                                            @click="incQty(item)">+</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start justify-end">
-                                <button type="button" class="h-10 w-10 inline-flex items-center justify-center"
-                                    @click="removeItem(item.id)" aria-label="Hapus">
-                                    <PhTrash :size="18" class="text-red-600" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 flex flex-col" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08)">
-                    <div class="mt-4">
-                        <div class="text-black text-xs uppercase">Tenggat Waktu</div>
-                        <input v-model="tenggatWaktu" type="date"
-                            class="mt-2 w-full border border-black px-3 py-2 text-sm text-black" />
-                    </div>
-                    
-                    <div class="mt-4">
-                        <div class="text-black text-xs uppercase">Bukti Pembayaran</div>
-                        <input type="file" accept="image/png, image/jpeg, image/jpg, application/pdf" @change="handleFileChange"
-                            class="mt-2 w-full border border-black px-3 py-2 text-sm text-black file:mr-4 file:py-1 file:px-2 file:border-0 file:text-xs file:bg-black file:text-white" />
-                    </div>
-
-                    <div v-if="distro" class="mt-4 p-3 bg-black/5 text-xs text-black border border-black/10">
-                        <div class="font-medium uppercase mb-1">Transfer ke Rekening:</div>
-                        <div class="flex items-center justify-between py-1 border-b border-black/5 last:border-0">
-                            <div>BCA: {{ distro.rekening_bca }}</div>
-                            <button type="button" @click="copyToClipboard(distro.rekening_bca)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BCA">
-                                <PhCopy :size="16" />
-                            </button>
-                        </div>
-                        <div class="flex items-center justify-between py-1">
-                            <div>BRI: {{ distro.rekening_bri }}</div>
-                            <button type="button" @click="copyToClipboard(distro.rekening_bri)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BRI">
-                                <PhCopy :size="16" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 text-black text-[10px] italic">*Pajak sudah termasuk</div>
-
-                    <div class="text-black mt-2 flex items-center justify-between text-sm">
-                        <div class="uppercase">Total Harga:</div>
-                        <div>{{ totalText }}</div>
-                    </div>
-
-                    <button type="button" class="mt-auto text-black w-full border border-black px-4 py-2 text-sm"
-                        @click="handleCheckoutClick">
-                        Checkout
-                    </button>
-                </div>
+                <OrderItemList :items="items" @dec-qty="decQty" @inc-qty="incQty" @remove-item="removeItem" />
+                <OrderForm :totalText="totalText" :distro="distro" @checkout="handleCheckout" />
             </section>
 
             <!-- Pesanan Section (from database: Dalam Produksi + Pembayaran Terkonfirmasi) -->
-            <PesananSection v-if="pesananAktif && pesananAktif.length > 0" :pesananAktif="pesananAktif" />
+            <OrderHistoryList v-if="pesananAktif && pesananAktif.length > 0" :pesanan="pesananAktif" />
         </main>
 
         <Footer />
