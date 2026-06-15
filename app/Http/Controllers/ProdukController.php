@@ -78,10 +78,20 @@ class ProdukController extends Controller
 
         $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
 
-        $variants = Produk::where('nama', '=', $produk->nama)
+        $kategoriId = $produk->bahan?->id_kategori;
+        if ($kategoriId) {
+            $variants = Produk::whereHas('bahan', function ($q) use ($kategoriId) {
+                $q->where('id_kategori', $kategoriId);
+            })
             ->where('is_active', true)
             ->with(['bahan.warna', 'bahan.ukuran'])
             ->get();
+        } else {
+            $variants = Produk::where('nama', '=', $produk->nama)
+                ->where('is_active', true)
+                ->with(['bahan.warna', 'bahan.ukuran'])
+                ->get();
+        }
 
         // Get all unique colors and sizes for products with the same name
         $warnaOptions = $variants->pluck('bahan.warna.nama')->filter()->unique()->values();
