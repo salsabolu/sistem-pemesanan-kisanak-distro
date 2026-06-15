@@ -5,10 +5,10 @@ import { computed } from 'vue';
 const page = usePage();
 const currentUrl = computed(() => page.url ?? '');
 
-const role = computed(() => {
-    const roles = (page.props as any)?.auth?.roles as string[] | undefined;
-    if (!roles || roles.length === 0) return '-';
-    return roles.join(', ');
+const nama = computed(() => {
+    const nama = (page.props as any)?.auth?.user?.nama as string | undefined;
+    if (!nama) return '-';
+    return nama;
 });
 </script>
 
@@ -27,7 +27,7 @@ const role = computed(() => {
                     <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
                 </svg>
             </div>
-            <div class="text-black text-sm font-medium">{{ role }}</div>
+            <div class="text-black text-sm font-medium">{{ nama }}</div>
         </div>
 
         <nav class="flex flex-col gap-1 text-sm flex-1">
