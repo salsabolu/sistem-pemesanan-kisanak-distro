@@ -19,6 +19,7 @@ type ProdukDB = {
     id: number; nama: string; harga_min: number | string; harga_max: number | string; stok: number; stok_minimum: number;
     gambar: string | null; status: string;
     warna?: { id: number; nama: string } | null; ukuran?: { id: number; nama: string };
+    kategori?: string;
 };
 
 const props = defineProps<{
@@ -56,6 +57,7 @@ const catalogueItems = computed(() => {
         imageSrc: (p.gambar && p.gambar !== '-') ? p.gambar : '/images/kaos-1.png',
         name: p.nama,
         price: formatHargaRange(p.harga_min, p.harga_max),
+        kategori: p.kategori ?? '',
     }));
 });
 

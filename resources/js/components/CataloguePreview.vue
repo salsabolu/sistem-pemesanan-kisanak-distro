@@ -10,6 +10,7 @@ interface CatalogueItem {
     imageSrc: string;
     name: string;
     price: string;
+    kategori: string;
 }
 
 defineProps<{ items: CatalogueItem[] }>();
@@ -34,7 +35,7 @@ function goToDetail(id: number) {
                 </div>
 
                 <h3 class="text-black whitespace-pre-line text-12px font-medium uppercase leading-tight mt-3">
-                    {{ item.name }}
+                    {{ item.kategori }}
                 </h3>
 
                 <p class="text-black text-12px font-normal mt-1">{{ item.price }}</p>

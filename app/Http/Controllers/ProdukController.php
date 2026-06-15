@@ -41,16 +41,17 @@ class ProdukController extends Controller
 
         $allProduks = $query->get();
 
-        // Group products by normalized nama so catalog shows one card per unique product
+        // Group products by normalized category name so catalog shows one card per unique category
         $grouped = $allProduks
             ->groupBy(function ($produk) {
-                return mb_strtolower(trim($produk->nama ?? ''), 'UTF-8');
+                return mb_strtolower(trim($produk->kategori?->nama ?? ''), 'UTF-8');
             })
             ->map(function ($variants) {
                 $first = $variants->first();
                 return [
                     'id' => $first->id,
                     'nama' => trim($first->nama),
+                    'kategori' => $first->kategori?->nama ?? '',
                     'harga_min' => $variants->min('harga'),
                     'harga_max' => $variants->max('harga'),
                     'stok' => $variants->sum(fn($v) => $v->bahan?->stok ?? 0),
