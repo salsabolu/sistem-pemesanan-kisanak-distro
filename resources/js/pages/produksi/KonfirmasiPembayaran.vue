@@ -35,7 +35,7 @@ const props = defineProps<{
     pembayaran?: PaginatedResponse;
 }>();
 
-const statusOptions = ['Menunggu', 'Belum Konfirmasi', 'Terkonfirmasi'] as const;
+const statusOptions = ['Belum Konfirmasi', 'Terkonfirmasi'] as const;
 
 const page = usePage<any>();
 const roles = computed<string[]>(() => page.props?.auth?.roles ?? []);
@@ -73,7 +73,7 @@ const items = computed(() => {
             produkText: produkCount > 0 ? `${produkCount} Produk` : '-',
             totalHarga: formatRupiah(p.pesanan?.total ?? 0),
             buktiPembayaran: p.bukti_pembayaran,
-            statusPembayaran: p.status as 'Menunggu' | 'Belum Konfirmasi' | 'Terkonfirmasi',
+            statusPembayaran: p.status as 'Belum Konfirmasi' | 'Terkonfirmasi',
             produk: produkList,
             pesananId: p.id_pesanan,
         };

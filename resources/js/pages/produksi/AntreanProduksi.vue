@@ -102,12 +102,8 @@ function statusColor(status: string | null): string {
         case 'Dalam Produksi': return 'bg-orange text-white';
         case 'Selesai': return 'bg-green text-white';
         case 'Dibatalkan': return 'bg-red text-white';
-        default: return 'bg-yellow text-black'; // null = belum diproses
+        default: return 'bg-orange text-white'; // default to Dalam Produksi
     }
-}
-
-function statusLabel(status: string | null): string {
-    return status ?? 'Menunggu';
 }
 
 function goToPage(page: number) {
@@ -203,7 +199,6 @@ function paginationPages(): (number | string)[] {
                                 <select class="px-3 py-1 rounded-full text-xs" :class="statusColor(item.status)"
                                     :value="item.status ?? ''" @click.stop @change="updateStatus(item, $event)"
                                     :disabled="item.status === 'Selesai'">
-                                    <option value="" disabled>Menunggu</option>
                                     <option v-for="opt in statusOptions" :key="opt" :value="opt">{{ opt }}</option>
                                 </select>
                             </td>

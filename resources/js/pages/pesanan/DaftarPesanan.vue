@@ -110,7 +110,7 @@ function statusPesananColor(status: string | null): string {
         case 'Dalam Produksi': return 'bg-orange text-white';
         case 'Selesai': return 'bg-green text-white';
         case 'Dibatalkan': return 'bg-red text-white';
-        default: return 'bg-yellow text-black'; // null = Menunggu
+        default: return 'bg-yellow text-black';
     }
 }
 
@@ -211,9 +211,8 @@ function paginationPages(): (number | string)[] {
                             <td class="px-3 py-3 text-black">{{ item.estimasiSelesai }}</td>
                             <td class="px-3 py-3">
                                 <select class="px-3 py-1 rounded-full text-xs" :class="statusPesananColor(item.statusPesanan)"
-                                    :value="item.statusPesanan ?? ''" :disabled="item.statusPesanan === 'Selesai'" @click.stop
+                                    :value="item.statusPesanan ?? 'Dalam Produksi'" :disabled="item.statusPesanan === 'Selesai'" @click.stop
                                     @change="updateStatusPesanan(item, $event)">
-                                    <option value="" disabled>Menunggu</option>
                                     <option v-for="opt in statusPesananOptions" :key="opt" :value="opt">{{ opt }}</option>
                                 </select>
                             </td>
