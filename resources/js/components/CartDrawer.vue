@@ -63,7 +63,10 @@ function formatRupiah(value: number): string {
 }
 
 function decQty(item: CartItem) {
-    item.quantity = Math.max(1, item.quantity - 1);
+    item.quantity -= 1;
+    if (item.quantity <= 0) {
+        cartItems.value = cartItems.value.filter(i => i.id !== item.id);
+    }
     saveCart();
 }
 
