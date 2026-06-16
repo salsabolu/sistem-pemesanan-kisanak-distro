@@ -16,7 +16,7 @@ class KeranjangController extends Controller
 {
     public function index()
     {
-        $userId = Auth::id() ?? User::query()->first()?->getKey() ?? 1;
+        $userId = Auth::id();
 
         // Get orders that are "Dalam Produksi" and have confirmed payment
         $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran'])
@@ -49,7 +49,7 @@ class KeranjangController extends Controller
             'items.*.unitPrice' => 'required|numeric|min:0',
         ]);
 
-        $userId = Auth::id() ?? User::query()->first()?->getKey() ?? 1;
+        $userId = Auth::id();
 
         $total = 0;
         foreach ($validated['items'] as $item) {

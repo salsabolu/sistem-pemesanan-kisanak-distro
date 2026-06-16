@@ -26,12 +26,12 @@ Route::get('/galeri', function () {
     return Inertia::render('Galeri');
 })->name('galeri');
 
-Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang');
-Route::post('/keranjang/checkout', [KeranjangController::class, 'checkout'])->name('keranjang.checkout');
-
 Route::get('/katalog/produk/{produk}', [ProdukController::class, 'show'])->name('produk.detail');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang');
+    Route::post('/keranjang/checkout', [KeranjangController::class, 'checkout'])->name('keranjang.checkout');
+    
     Route::get('/profil/riwayat-pesanan', [ProfilController::class, 'riwayatPesanan'])->name('profil.riwayat-pesanan');
     Route::get('/profil/edit', [ProfilController::class, 'edit'])->name('profil.edit');
     Route::put('/profil/edit', [ProfilController::class, 'update'])->name('profil.update');
@@ -98,5 +98,3 @@ Route::delete('/master/produk/{produk}', [ProdukController::class, 'destroy'])->
 Route::get('welcome', function () {
     return Inertia::render('Welcome');
 })->middleware(['auth', 'verified'])->name('welcome');
-
-require __DIR__.'/settings.php';
