@@ -145,15 +145,17 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">No</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">
                                 <span class="inline-flex items-center gap-1">Nama
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M7 15l5 5 5-5" /><path d="M7 9l5-5 5 5" />
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M7 15l5 5 5-5" />
+                                        <path d="M7 9l5-5 5 5" />
                                     </svg>
                                 </span>
                             </th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Kategori</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Warna</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Ukuran</th>
-                            <!-- <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th> -->
+                            <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Stok</th>
                             <th class="text-left px-3 py-3 text-black font-medium text-xs uppercase">Status</th>
                             <th class="text-center px-3 py-3 text-black font-medium text-xs uppercase">Aksi</th>
                         </tr>
@@ -170,7 +172,7 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.kategori?.nama ?? '-' }}</td>
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.warna?.nama ?? '-' }}</td>
                             <td class="px-3 py-3 text-black/70 text-xs uppercase">{{ item.ukuran?.nama ?? '-' }}</td>
-                            <!-- <td class="px-3 py-3 text-black">{{ item.stok }}</td> -->
+                            <td class="px-3 py-3 text-black">{{ item.stok }}</td>
                             <td class="px-3 py-3">
                                 <span class="px-2 py-0.5 rounded-full text-xs" :class="statusColor(item.is_active)">
                                     {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
@@ -178,10 +180,12 @@ const ukuranList = computed(() => props.ukuran ?? []);
                             </td>
                             <td class="px-3 py-3 text-center" @click.stop>
                                 <div class="flex items-center justify-center gap-2">
-                                    <button type="button" class="text-black/50 hover:text-black" @click="openEdit(item)">
+                                    <button type="button" class="text-black/50 hover:text-black"
+                                        @click="openEdit(item)">
                                         <PhPencilSimple :size="18" />
                                     </button>
-                                    <button type="button" class="text-red-500 hover:text-red-700" @click="hapusItem(item.id)">
+                                    <button type="button" class="text-red-500 hover:text-red-700"
+                                        @click="hapusItem(item.id)">
                                         <PhTrash :size="18" class="text-red-600" />
                                     </button>
                                 </div>
@@ -216,7 +220,8 @@ const ukuranList = computed(() => props.ukuran ?? []);
             <form @submit.prevent="submitForm">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="col-span-2">
-                        <label class="block text-black text-sm mb-1">Nama Bahan <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Nama Bahan <span
+                                class="text-red-500">*</span></label>
                         <input v-model="form.nama" type="text" @input="isNameManuallyEdited = true"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
@@ -224,7 +229,8 @@ const ukuranList = computed(() => props.ukuran ?? []);
                     </div>
 
                     <div>
-                        <label class="block text-black text-sm mb-1">Kategori <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Kategori <span
+                                class="text-red-500">*</span></label>
                         <select v-model="form.id_kategori"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required>
@@ -260,21 +266,24 @@ const ukuranList = computed(() => props.ukuran ?? []);
                     </div>
 
                     <div>
-                        <label class="block text-black text-sm mb-1">Stok Minimum <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Stok Minimum <span
+                                class="text-red-500">*</span></label>
                         <input v-model.number="form.stok_minimum" type="number" min="0"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
                     </div>
 
                     <div>
-                        <label class="block text-black text-sm mb-1">Durasi Produksi (Menit) <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Durasi Produksi (Menit) <span
+                                class="text-red-500">*</span></label>
                         <input v-model.number="form.durasi_produksi" type="number" min="0"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
                     </div>
 
                     <div>
-                        <label class="block text-black text-sm mb-1">Durasi Restok (Hari) <span class="text-red-500">*</span></label>
+                        <label class="block text-black text-sm mb-1">Durasi Restok (Hari) <span
+                                class="text-red-500">*</span></label>
                         <input v-model.number="durasiRestokHari" type="number" min="0" step="1"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
