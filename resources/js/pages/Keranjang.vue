@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
-import { computed, ref, onMounted } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, onMounted, watch } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import Footer from '@/components/Footer.vue';
 import PublicHeader from '@/components/PublicHeader.vue';
@@ -9,6 +9,7 @@ import OrderItemList from '@/components/OrderItemList.vue';
 import OrderForm from '@/components/OrderForm.vue';
 import OrderHistoryList from '@/components/OrderHistoryList.vue';
 import CheckoutConfirmationModal from '@/components/CheckoutConfirmationModal.vue';
+import Alert from '@/components/Alert.vue';
 
 type CartItem = {
     id: string;
@@ -45,6 +46,26 @@ const props = defineProps<{
     distro?: DistroType;
 }>();
 
+// ── Inertia flash messages ────────────────────────────────────────────────
+const page = usePage<any>();
+const flashSuccess = computed(() => page.props.flash?.success as string | undefined);
+const flashError   = computed(() => page.props.flash?.error   as string | undefined);
+
+const alertState = ref({
+    show: false,
+    message: '',
+    type: 'success' as 'success' | 'error' | 'info' | 'warning',
+});
+
+function showAlert(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') {
+    alertState.value = { show: true, message, type };
+}
+
+// Tampilkan alert ketika flash message datang dari server (setelah redirect)
+watch(flashSuccess, (msg) => { if (msg) showAlert(msg, 'success'); }, { immediate: true });
+watch(flashError,   (msg) => { if (msg) showAlert(msg, 'error');   }, { immediate: true });
+
+// ── Cart ─────────────────────────────────────────────────────────────────
 const items = ref<CartItem[]>([]);
 
 onMounted(() => {
@@ -54,22 +75,14 @@ onMounted(() => {
 function loadCart() {
     const raw = localStorage.getItem('kisanak_cart');
     if (raw) {
-        try {
-            items.value = JSON.parse(raw);
-        } catch {
-            items.value = [];
-        }
+        try { items.value = JSON.parse(raw); }
+        catch { items.value = []; }
     }
 }
 
 function saveCart() {
     localStorage.setItem('kisanak_cart', JSON.stringify(items.value));
 }
-
-const isCheckoutConfirmOpen = ref(false);
-
-const tenggatWaktu = ref('');
-const buktiPembayaran = ref<File | null>(null);
 
 function formatRupiah(value: number): string {
     const rounded = Math.max(0, Math.round(value));
@@ -86,30 +99,30 @@ function removeItem(id: string) {
     saveCart();
 }
 
-const totalValue = computed(() => {
-    return items.value.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
-});
-
+const totalValue = computed(() =>
+    items.value.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0)
+);
 const totalText = computed(() => formatRupiah(totalValue.value));
-
 const pesananAktif = computed(() => props.pesananAktif ?? []);
 
-function handleCheckout(payload: { tenggatWaktu: string, buktiPembayaran: File | null }) {
+// ── Checkout ──────────────────────────────────────────────────────────────
+const isCheckoutConfirmOpen = ref(false);
+const tenggatWaktu = ref('');
+const buktiPembayaran = ref<File | null>(null);
+
+function handleCheckout(payload: { tenggatWaktu: string; buktiPembayaran: File | null }) {
     if (items.value.length === 0) {
-        alert('Keranjang masih kosong');
+        showAlert('Keranjang masih kosong', 'error');
         return;
     }
-
     if (!payload.tenggatWaktu) {
-        alert('Tenggat waktu harus diisi');
+        showAlert('Tenggat waktu harus diisi', 'error');
         return;
     }
-
     if (!payload.buktiPembayaran) {
-        alert('Bukti pembayaran harus diupload');
+        showAlert('Bukti pembayaran harus diupload', 'error');
         return;
     }
-
     tenggatWaktu.value = payload.tenggatWaktu;
     buktiPembayaran.value = payload.buktiPembayaran;
     isCheckoutConfirmOpen.value = true;
@@ -132,13 +145,22 @@ function submitOrder() {
         formData.append(`items[${index}][unitPrice]`, String(it.unitPrice));
     });
 
+    // Bersihkan keranjang SEBELUM request dikirim.
+    // Ini memastikan bahwa apabila komponen di-remount saat redirect,
+    // onMounted → loadCart() tidak akan menemukan data lama di localStorage.
+    localStorage.removeItem('kisanak_cart');
+    items.value = [];
+    tenggatWaktu.value = '';
+    buktiPembayaran.value = null;
+
     router.post('/keranjang/checkout', formData, {
-        onSuccess: () => {
-            localStorage.removeItem('kisanak_cart');
-            items.value = [];
-            tenggatWaktu.value = '';
-            buktiPembayaran.value = null;
-            alert('Pesanan berhasil dibuat!');
+        // forceFormData wajib agar Inertia tidak mengonversi payload ke JSON
+        // (file akan hilang jika dikirim sebagai JSON)
+        forceFormData: true,
+        onError: (errors) => {
+            // Jika request gagal, tampilkan pesan error
+            const firstError = Object.values(errors)[0] as string;
+            showAlert(firstError || 'Terjadi kesalahan saat memproses pesanan.', 'error');
         },
     });
 }
@@ -147,6 +169,8 @@ function submitOrder() {
 <template>
 
     <Head title="Keranjang" />
+
+    <Alert v-model:show="alertState.show" :message="alertState.message" :type="alertState.type" />
 
     <div class="bg-white min-h-screen flex flex-col">
         <PublicHeader />

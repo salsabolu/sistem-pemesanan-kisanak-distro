@@ -13,7 +13,6 @@ function handleSimpan() {
         preserveScroll: true,
         onSuccess: () => {
             form.reset();
-            alert('Kata sandi berhasil diubah!');
         }
     });
 }

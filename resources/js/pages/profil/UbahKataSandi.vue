@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import Footer from '@/components/Footer.vue';
 import PublicHeader from '@/components/PublicHeader.vue';
 import ProfileSidebar from '@/components/ProfileSidebar.vue';
 import ChangePasswordForm from '@/components/ChangePasswordForm.vue';
+import Alert from '@/components/Alert.vue';
+
+const page = usePage();
+const flashSuccess = computed(() => page.props.flash?.success as string | undefined);
+const alertState = ref({ show: false, message: '', type: 'success' as const });
+
+watch(flashSuccess, (msg) => {
+    if (msg) {
+        alertState.value = { show: true, message: msg, type: 'success' };
+    }
+}, { immediate: true });
 
 
 </script>
@@ -11,6 +23,8 @@ import ChangePasswordForm from '@/components/ChangePasswordForm.vue';
 <template>
 
     <Head title="Ubah Kata Sandi" />
+
+    <Alert v-model:show="alertState.show" :message="alertState.message" :type="alertState.type" />
 
     <div class="bg-white min-h-screen flex flex-col">
         <!-- Header -->

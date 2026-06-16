@@ -14,10 +14,7 @@ const form = useForm({
 
 function handleEdit() {
     form.put('/profil/edit', {
-        preserveScroll: true,
-        onSuccess: () => {
-            alert('Profil berhasil diperbarui!');
-        }
+        preserveScroll: true
     });
 }
 </script>
