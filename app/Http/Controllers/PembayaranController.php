@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembayaran;
+use App\Services\EstimasiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -84,6 +85,10 @@ class PembayaranController extends Controller
                         $produk->bahan->decrement('stok', $qty);
                     }
                 }
+
+                // Rule-Based System: hitung estimasi selesai
+                $estimasi = EstimasiService::hitungEstimasi($pesanan);
+                $pesanan->update(['estimasi_selesai' => $estimasi]);
             }
         }
 

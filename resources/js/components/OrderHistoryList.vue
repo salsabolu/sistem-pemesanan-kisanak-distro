@@ -21,6 +21,19 @@ function formatDate(value: string | null): string {
     return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
+// Format lengkap dengan jam untuk estimasi_selesai
+function formatDateTime(value: string | null): string {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    const dd   = String(d.getDate()).padStart(2, '0');
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh   = String(d.getHours()).padStart(2, '0');
+    const min  = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}-${mm}-${yyyy}, ${hh}:${min}`;
+}
+
 const ordersGrouped = computed(() => {
     let data = [];
     if (Array.isArray(props.pesanan)) {
@@ -60,7 +73,7 @@ const ordersGrouped = computed(() => {
             totalText: formatRupiah(p.total ?? 0),
             status: p.status,
             deadlineText: formatDate(p.tenggat_waktu ?? null),
-            estimatedFinish: formatDate(p.estimasi_selesai ?? null),
+            estimatedFinish: formatDateTime(p.estimasi_selesai ?? null),
         });
     }
     return Object.keys(groups).map(date => ({

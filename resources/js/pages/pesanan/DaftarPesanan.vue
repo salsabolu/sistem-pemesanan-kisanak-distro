@@ -64,7 +64,7 @@ const items = computed(() => {
             totalHarga: formatRupiah(p.total),
             statusPembayaran: (p.pembayaran?.status ?? 'Belum Konfirmasi') as 'Belum Konfirmasi' | 'Terkonfirmasi',
             tenggatWaktu: formatDate(p.tenggat_waktu ?? null),
-            estimasiSelesai: formatDate(p.estimasi_selesai ?? null),
+            estimasiSelesai: formatDateTime(p.estimasi_selesai ?? null),
             statusPesanan: p.status as 'Dalam Produksi' | 'Selesai' | 'Dibatalkan' | null,
             pembayaranId: p.pembayaran?.id ?? null,
             produk: p.produk ?? [],
@@ -83,6 +83,19 @@ function formatDate(value: string | null): string {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+// Format lengkap dengan jam untuk estimasi_selesai
+function formatDateTime(value: string | null): string {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    const dd   = String(d.getDate()).padStart(2, '0');
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh   = String(d.getHours()).padStart(2, '0');
+    const min  = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}-${mm}-${yyyy}, ${hh}:${min}`;
 }
 
 
