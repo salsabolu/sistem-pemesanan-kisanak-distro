@@ -77,12 +77,24 @@ class PesananController extends Controller
 
         $pesanan->update($validated);
 
+        // Kurangi stok saat masuk Dalam Produksi
         if ($oldStatus !== 'Dalam Produksi' && isset($validated['status']) && $validated['status'] === 'Dalam Produksi') {
             $pesanan->loadMissing('produk.bahan');
             foreach ($pesanan->produk as $produk) {
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
                 if ($qty > 0 && $produk->bahan) {
                     $produk->bahan->decrement('stok', $qty);
+                }
+            }
+        }
+
+        // Kembalikan stok saat pesanan dibatalkan dari Dalam Produksi
+        if ($oldStatus === 'Dalam Produksi' && isset($validated['status']) && $validated['status'] === 'Dibatalkan') {
+            $pesanan->loadMissing('produk.bahan');
+            foreach ($pesanan->produk as $produk) {
+                $qty = (int) ($produk->pivot->jumlah ?? 0);
+                if ($qty > 0 && $produk->bahan) {
+                    $produk->bahan->increment('stok', $qty);
                 }
             }
         }
@@ -104,12 +116,24 @@ class PesananController extends Controller
 
         $pesanan->update($validated);
 
+        // Kurangi stok saat masuk Dalam Produksi
         if ($oldStatus !== 'Dalam Produksi' && $validated['status'] === 'Dalam Produksi') {
             $pesanan->loadMissing('produk.bahan');
             foreach ($pesanan->produk as $produk) {
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
                 if ($qty > 0 && $produk->bahan) {
                     $produk->bahan->decrement('stok', $qty);
+                }
+            }
+        }
+
+        // Kembalikan stok saat pesanan dibatalkan dari Dalam Produksi
+        if ($oldStatus === 'Dalam Produksi' && $validated['status'] === 'Dibatalkan') {
+            $pesanan->loadMissing('produk.bahan');
+            foreach ($pesanan->produk as $produk) {
+                $qty = (int) ($produk->pivot->jumlah ?? 0);
+                if ($qty > 0 && $produk->bahan) {
+                    $produk->bahan->increment('stok', $qty);
                 }
             }
         }
