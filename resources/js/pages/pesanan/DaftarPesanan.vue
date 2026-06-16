@@ -90,11 +90,11 @@ function formatDateTime(value: string | null): string {
     if (!value) return '-';
     const d = new Date(value);
     if (isNaN(d.getTime())) return '-';
-    const dd   = String(d.getDate()).padStart(2, '0');
-    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    const hh   = String(d.getHours()).padStart(2, '0');
-    const min  = String(d.getMinutes()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
     return `${dd}-${mm}-${yyyy}, ${hh}:${min}`;
 }
 
@@ -188,8 +188,8 @@ function paginationPages(): (number | string)[] {
                         <tr v-if="items.length === 0">
                             <td colspan="8" class="px-3 py-6 text-center text-black/50">Belum ada pesanan.</td>
                         </tr>
-                        <tr v-for="item in items" :key="item.id" class="border-t border-black/5 cursor-pointer hover:bg-black/5"
-                            @click="openDetail(item)">
+                        <tr v-for="item in items" :key="item.id"
+                            class="border-t border-black/5 cursor-pointer hover:bg-black/5" @click="openDetail(item)">
                             <td class="px-3 py-3 text-black">{{ item.no }}</td>
                             <td class="px-3 py-3">
                                 <div class="flex items-center gap-2">
@@ -213,20 +213,23 @@ function paginationPages(): (number | string)[] {
                             <td class="px-3 py-3 text-black">{{ item.totalHarga }}</td>
                             <td class="px-3 py-3">
                                 <select class="w-full pl-1 pr-3 py-1 rounded-full text-xs"
-                                    :class="statusPembayaranColor(item.statusPembayaran)"
-                                    :value="item.statusPembayaran" :disabled="!item.pembayaranId"
-                                    @click.stop
+                                    :class="statusPembayaranColor(item.statusPembayaran)" :value="item.statusPembayaran"
+                                    :disabled="!item.pembayaranId" @click.stop
                                     @change="updateStatusPembayaran(item, $event)">
-                                    <option v-for="opt in statusPembayaranOptions" :key="opt" :value="opt">{{ opt }}</option>
+                                    <option v-for="opt in statusPembayaranOptions" :key="opt" :value="opt">{{ opt }}
+                                    </option>
                                 </select>
                             </td>
                             <td class="px-3 py-3 text-black">{{ item.tenggatWaktu }}</td>
                             <td class="px-3 py-3 text-black">{{ item.estimasiSelesai }}</td>
                             <td class="px-3 py-3">
-                                <select class="px-3 py-1 rounded-full text-xs" :class="statusPesananColor(item.statusPesanan)"
-                                    :value="item.statusPesanan ?? 'Dalam Produksi'" :disabled="item.statusPesanan === 'Selesai'" @click.stop
+                                <select class="px-3 py-1 rounded-full text-xs"
+                                    :class="statusPesananColor(item.statusPesanan)"
+                                    :value="item.statusPesanan ?? 'Dalam Produksi'"
+                                    :disabled="item.statusPesanan === 'Selesai'" @click.stop
                                     @change="updateStatusPesanan(item, $event)">
-                                    <option v-for="opt in statusPesananOptions" :key="opt" :value="opt">{{ opt }}</option>
+                                    <option v-for="opt in statusPesananOptions" :key="opt" :value="opt">{{ opt }}
+                                    </option>
                                 </select>
                             </td>
                         </tr>
@@ -262,7 +265,8 @@ function paginationPages(): (number | string)[] {
                         <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
                             <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
                             <div class="mt-1 text-black/50 text-xs uppercase">
-                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
+                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / {{ (prod.ukuran?.nama ??
+                                    '-').toUpperCase() }}
                             </div>
                             <div class="mt-1 text-black text-xs">
                                 {{ prod.pivot?.jumlah ?? 0 }} /
