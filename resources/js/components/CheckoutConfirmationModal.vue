@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from '@/components/Button.vue';
+
 defineProps<{
     open: boolean;
 }>();
@@ -16,14 +18,14 @@ const emit = defineEmits<{
             <h3 class="text-lg font-medium uppercase">Konfirmasi Pesanan</h3>
             <p class="mt-1 text-sm">Apakah data pesanan sudah sesuai?</p>
             <div class="mt-4 flex gap-4 justify-end">
-                <button type="button" class="px-6 py-2 text-sm border border-black bg-white text-black hover:bg-black/5"
+                <Button type="button" class="px-6 py-2 text-sm"
                     @click="emit('close')">
                     Batal
-                </button>
-                <button type="button" class="px-6 py-2 text-sm bg-black text-white hover:bg-black/90"
+                </Button>
+                <Button type="button" variant="solid" class="px-6 py-2 text-sm"
                     @click="emit('confirm')">
                     Pesan Sekarang
-                </button>
+                </Button>
             </div>
         </div>
     </div>

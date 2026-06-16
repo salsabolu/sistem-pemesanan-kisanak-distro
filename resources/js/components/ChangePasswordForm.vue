@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
+import Button from '@/components/Button.vue';
 
 const form = useForm({
     current_password: '',
@@ -26,7 +27,8 @@ function handleSimpan() {
             </label>
             <input id="kata-sandi-saat-ini" v-model="form.current_password" type="password" required
                 class="mt-1 w-full border border-black/20 bg-transparent px-3 py-2 text-sm text-black focus:outline-none focus:border-black" />
-            <div v-if="form.errors.current_password" class="text-red-500 text-xs mt-1">{{ form.errors.current_password }}</div>
+            <div v-if="form.errors.current_password" class="text-red-500 text-xs mt-1">{{ form.errors.current_password
+                }}</div>
         </div>
 
         <div class="mb-4">
@@ -47,10 +49,9 @@ function handleSimpan() {
         </div>
 
         <div class="flex justify-end">
-            <button type="submit" :disabled="form.processing"
-                class="border border-black px-6 py-2 text-sm text-black hover:bg-black/5 disabled:opacity-50">
+            <Button type="submit" :disabled="form.processing" class="px-6 py-2 text-sm">
                 Simpan
-            </button>
+            </Button>
         </div>
     </form>
 </template>

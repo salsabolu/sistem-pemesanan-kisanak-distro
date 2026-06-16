@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PhCopy } from '@phosphor-icons/vue';
 import { ref } from 'vue';
+import Button from '@/components/Button.vue';
 
 type DistroType = {
     rekening_bca: string;
@@ -78,9 +79,9 @@ function copyToClipboard(text: string) {
             <div>{{ totalText }}</div>
         </div>
 
-        <button type="button" class="mt-auto text-black w-full border border-black px-4 py-2 text-sm"
+        <Button type="button" class="mt-auto w-full py-2 text-sm"
             @click="handleCheckoutClick">
             Checkout
-        </button>
+        </Button>
     </div>
 </template>

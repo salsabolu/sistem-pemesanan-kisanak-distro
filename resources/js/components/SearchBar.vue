@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PhMagnifyingGlass, PhX } from '@phosphor-icons/vue';
 import { ref, nextTick } from 'vue';
+import Button from '@/components/Button.vue';
 
 const props = defineProps<{
     modelValue?: string;
@@ -43,20 +44,13 @@ defineExpose({ focus });
         <div class="w-full max-w-2xl bg-white shadow-lg border border-black/10">
             <div class="flex items-center px-4">
                 <PhMagnifyingGlass :size="18" class="text-black/40 shrink-0" />
-                <input
-                    ref="inputRef"
-                    :value="localValue"
-                    @input="onInput"
-                    @keyup.enter="onSearch"
-                    @keyup.esc="close"
-                    type="text"
-                    :placeholder="placeholder || 'Cari produk...'"
-                    class="flex-1 py-3 px-3 text-sm text-black bg-transparent focus:outline-none"
-                />
-                <button type="button" @click="onSearch" class="text-black/50 hover:text-black px-2">
+                <input ref="inputRef" :value="localValue" @input="onInput" @keyup.enter="onSearch" @keyup.esc="close"
+                    type="text" :placeholder="placeholder || 'Cari produk...'"
+                    class="flex-1 py-3 px-3 text-sm text-black bg-transparent focus:outline-none" />
+                <Button variant="solid" @click="onSearch" class="text-xs py-1 shrink-0">
                     Cari
-                </button>
-                <button type="button" @click="close" class="text-black/40 hover:text-black pl-2 pr-1">
+                </Button>
+                <button type="button" @click="close" class="text-black/40 hover:text-black pl-2 pr-1 shrink-0">
                     <PhX :size="18" />
                 </button>
             </div>

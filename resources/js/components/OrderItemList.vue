@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PhTrash } from '@phosphor-icons/vue';
+import Button from '@/components/Button.vue';
 
 type CartItem = {
     id: string;
@@ -18,8 +19,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'dec-qty', item: CartItem): void;
-    (e: 'inc-qty', item: CartItem): void;
+    (e: 'update-qty', item: CartItem, newQty: number): void;
     (e: 'remove-item', id: string): void;
 }>();
 </script>
@@ -43,15 +43,14 @@ const emit = defineEmits<{
 
                     <div class="mt-3">
                         <div class="text-black text-xs uppercase">Jumlah</div>
-                        <div class="mt-2 inline-flex items-center" :style="{ border: '1px solid black' }">
-                            <button type="button" class="text-black h-8 w-8"
-                                @click="emit('dec-qty', item)">-</button>
-                            <div class="h-8 w-10 text-black text-center text-sm leading-8"
-                                :style="{ borderLeft: '1px solid black', borderRight: '1px solid black' }">
-                                {{ item.quantity }}
-                            </div>
-                            <button type="button" class="text-black h-8 w-8"
-                                @click="emit('inc-qty', item)">+</button>
+                        <div class="mt-2">
+                            <Button
+                                variant="quantity"
+                                :modelValue="item.quantity"
+                                :showLabel="false"
+                                :min="1"
+                                @update:modelValue="(val) => emit('update-qty', item, val)"
+                            />
                         </div>
                     </div>
                 </div>

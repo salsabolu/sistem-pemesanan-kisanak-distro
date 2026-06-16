@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import Button from '@/components/Button.vue';
 
 type CartItem = {
     id: string;
@@ -62,16 +63,11 @@ function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(rounded)}`;
 }
 
-function decQty(item: CartItem) {
-    item.quantity -= 1;
+function handleQtyChange(item: CartItem, newQty: number) {
+    item.quantity = newQty;
     if (item.quantity <= 0) {
         cartItems.value = cartItems.value.filter(i => i.id !== item.id);
     }
-    saveCart();
-}
-
-function incQty(item: CartItem) {
-    item.quantity += 1;
     saveCart();
 }
 
@@ -87,17 +83,11 @@ function goToCart() {
 </script>
 
 <template>
-    <div
-        v-if="props.open"
-        class="fixed inset-0 z-50 flex justify-end"
-        @click="emit('close')"
-    >
+    <div v-if="props.open" class="fixed inset-0 z-50 flex justify-end" @click="emit('close')">
         <div class="absolute inset-0 bg-black/40" />
 
-        <div
-            class="bg-white text-black relative h-full w-full border-l border-black px-8 py-7 flex flex-col md:w-2/5 md:max-w-none"
-            @click.stop
-        >
+        <div class="bg-white text-black relative h-full w-full border-l border-black px-8 py-7 flex flex-col md:w-2/5 md:max-w-none"
+            @click.stop>
             <h2 class="text-lg font-medium uppercase flex-none">Keranjang</h2>
 
             <div class="mt-6 flex-1 overflow-y-auto">
@@ -109,11 +99,7 @@ function goToCart() {
                 <!-- Cart items -->
                 <div v-for="item in cartItems" :key="item.id" class="grid grid-cols-2 w-full gap-2 mb-6">
                     <div class="aspect-square w-40 h-40 overflow-hidden border border-black">
-                        <img
-                            :src="item.imageSrc"
-                            :alt="item.productName"
-                            class="h-full w-full object-cover"
-                        />
+                        <img :src="item.imageSrc" :alt="item.productName" class="h-full w-full object-cover" />
                     </div>
 
                     <div class="grid grid-rows-1 w-full h-full min-w-0">
@@ -127,18 +113,9 @@ function goToCart() {
 
                         <div class="mt-4">
                             <div class="text-xs uppercase">Jumlah</div>
-                            <div
-                                class="mt-2 inline-flex items-center"
-                                :style="{ border: '1px solid black' }"
-                            >
-                                <button type="button" class="h-8 w-8" @click="decQty(item)">-</button>
-                                <div
-                                    class="h-8 w-10 text-center text-sm leading-8"
-                                    :style="{ borderLeft: '1px solid black', borderRight: '1px solid black' }"
-                                >
-                                    {{ item.quantity }}
-                                </div>
-                                <button type="button" class="h-8 w-8" @click="incQty(item)">+</button>
+                            <div class="mt-2">
+                                <Button variant="quantity" :modelValue="item.quantity" :showLabel="false" :min="0"
+                                    @update:modelValue="(val) => handleQtyChange(item, val)" />
                             </div>
                         </div>
                     </div>
@@ -153,14 +130,9 @@ function goToCart() {
                     <div>{{ totalText }}</div>
                 </div>
 
-                <button
-                    type="button"
-                    class="mt-6 w-full border border-black px-4 py-2 text-sm"
-                    :disabled="cartItems.length === 0"
-                    @click="goToCart"
-                >
+                <Button class="mt-6 w-full text-sm py-2" :disabled="cartItems.length === 0" @click="goToCart">
                     Checkout
-                </button>
+                </Button>
             </div>
         </div>
     </div>
