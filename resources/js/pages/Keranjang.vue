@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted } from 'vue';
+import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import Footer from '@/components/Footer.vue';
 import PublicHeader from '@/components/PublicHeader.vue';
 import EmptyCart from '@/components/EmptyCart.vue';
@@ -151,7 +152,7 @@ function submitOrder() {
         <PublicHeader />
 
         <main class="mx-auto w-full px-30 pb-16 pt-10">
-            <div class="text-black text-sm font-medium uppercase">Keranjang</div>
+            <Breadcrumbs :breadcrumbs="[{ title: 'Keranjang' }]" separator="/" uppercase />
 
             <!-- Empty Cart -->
             <EmptyCart v-if="items.length === 0" />
@@ -162,7 +163,14 @@ function submitOrder() {
             </section>
 
             <!-- Pesanan Section (from database: Dalam Produksi + Pembayaran Terkonfirmasi) -->
-            <OrderHistoryList v-if="pesananAktif && pesananAktif.length > 0" :pesanan="pesananAktif" />
+            <template v-if="pesananAktif && pesananAktif.length > 0">
+                <div class="mt-10 mb-4">
+                    <Breadcrumbs :breadcrumbs="[{ title: 'Riwayat Pesanan' }]" separator="/" uppercase />
+                </div>
+                <section class="bg-white p-8 shadow-md">
+                    <OrderHistoryList :pesanan="pesananAktif" />
+                </section>
+            </template>
         </main>
 
         <Footer />

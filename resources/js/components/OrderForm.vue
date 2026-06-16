@@ -43,13 +43,13 @@ function copyToClipboard(text: string) {
 </script>
 
 <template>
-    <div class="bg-white p-6 flex flex-col" style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08)">
+    <div class="bg-white shadow-md p-6 flex flex-col">
         <div class="mt-4">
             <div class="text-black text-xs uppercase">Tenggat Waktu</div>
             <input v-model="tenggatWaktu" type="date"
                 class="mt-2 w-full border border-black px-3 py-2 text-sm text-black" />
         </div>
-        
+
         <div class="mt-4">
             <div class="text-black text-xs uppercase">Bukti Pembayaran</div>
             <input type="file" accept="image/png, image/jpeg, image/jpg, application/pdf" @change="handleFileChange"
@@ -60,13 +60,15 @@ function copyToClipboard(text: string) {
             <div class="font-medium uppercase mb-1">Transfer ke Rekening:</div>
             <div class="flex items-center justify-between py-1 border-b border-black/5 last:border-0">
                 <div>BCA: {{ distro.rekening_bca }}</div>
-                <button type="button" @click="copyToClipboard(distro.rekening_bca)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BCA">
+                <button type="button" @click="copyToClipboard(distro.rekening_bca)"
+                    class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BCA">
                     <PhCopy :size="16" />
                 </button>
             </div>
             <div class="flex items-center justify-between py-1">
                 <div>BRI: {{ distro.rekening_bri }}</div>
-                <button type="button" @click="copyToClipboard(distro.rekening_bri)" class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BRI">
+                <button type="button" @click="copyToClipboard(distro.rekening_bri)"
+                    class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BRI">
                     <PhCopy :size="16" />
                 </button>
             </div>
@@ -79,8 +81,7 @@ function copyToClipboard(text: string) {
             <div>{{ totalText }}</div>
         </div>
 
-        <Button type="button" class="mt-auto w-full py-2 text-sm"
-            @click="handleCheckoutClick">
+        <Button type="button" class="mt-auto w-full py-2 text-sm" @click="handleCheckoutClick">
             Checkout
         </Button>
     </div>

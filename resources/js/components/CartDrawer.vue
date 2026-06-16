@@ -2,6 +2,7 @@
 import { router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import Button from '@/components/Button.vue';
+import ProductCard from '@/components/ProductCard.vue';
 
 type CartItem = {
     id: string;
@@ -104,28 +105,24 @@ function goToCart() {
                 </div>
 
                 <!-- Cart items -->
-                <div v-for="item in cartItems" :key="item.id" class="grid grid-cols-2 w-full gap-2 mb-6">
-                    <div class="aspect-square w-40 h-40 overflow-hidden border border-black">
-                        <img :src="item.imageSrc" :alt="item.productName" class="h-full w-full object-cover" />
-                    </div>
-
-                    <div class="grid grid-rows-1 w-full h-full min-w-0">
-                        <div class="text-sm font-medium uppercase leading-snug">
-                            {{ item.productName }}
-                        </div>
-                        <div class="mt-0 text-xs uppercase">
-                            {{ item.color.toUpperCase() }} / {{ item.size.toUpperCase() }}
-                        </div>
-                        <div class="mt-1 text-sm">{{ formatRupiah(item.unitPrice * item.quantity) }}</div>
-
-                        <div class="mt-4">
-                            <div class="text-xs uppercase">Jumlah</div>
+                <div v-for="item in cartItems" :key="item.id" class="mb-6">
+                    <ProductCard
+                        :imageSrc="item.imageSrc"
+                        :productName="item.productName"
+                        :color="item.color"
+                        :size="item.size"
+                        :price="formatRupiah(item.unitPrice * item.quantity)"
+                        imageSize="lg"
+                    >
+                        <!-- Jumlah slot -->
+                        <div class="mt-3">
+                            <div class="text-xs uppercase text-black">Jumlah</div>
                             <div class="mt-2">
                                 <Button variant="quantity" :modelValue="item.quantity" :showLabel="false" :min="0"
                                     @update:modelValue="(val) => handleQtyChange(item, val)" />
                             </div>
                         </div>
-                    </div>
+                    </ProductCard>
                 </div>
             </div>
 

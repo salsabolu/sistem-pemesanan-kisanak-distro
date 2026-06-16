@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import NavIcon from '@/components/NavIcon.vue';
+import ProductCard from '@/components/ProductCard.vue';
 import { PhInfo } from '@phosphor-icons/vue';
 
 const props = defineProps<{
@@ -27,32 +28,29 @@ const ordersGrouped = computed(() => {
     } else if (props.pesanan?.data) {
         data = props.pesanan.data;
     }
-    
+
     if (data.length === 0) return [];
-    
+
     const groups: Record<string, any[]> = {};
     for (const p of data) {
-        // Handle case where created_at is missing (like active orders)
         const date = formatDate(p.created_at || new Date().toISOString());
         if (!groups[date]) groups[date] = [];
 
         const products = (p.produk ?? []).map((pr: any, idx: number) => {
             const qty = (pr?.pivot?.jumlah ?? 0) as number;
             const subtotal = (pr?.pivot?.subtotal ?? 0) as number;
-
-            const imageSrc = pr?.gambar && pr.gambar !== '-' ? pr.gambar : '/images/kaos-1.png';
-            const imageAlt = pr?.nama ?? '-';
+            const unitPrice = subtotal / Math.max(1, qty);
 
             return {
                 key: `${pr?.id ?? 'p'}-${idx}`,
-                imageSrc,
-                imageAlt,
+                imageSrc: pr?.gambar && pr.gambar !== '-' ? pr.gambar : '/images/kaos-1.png',
+                imageAlt: pr?.nama ?? '-',
                 productName: pr?.nama ?? '-',
                 color: pr?.warna?.nama ?? '-',
                 size: pr?.ukuran?.nama ?? '-',
                 quantity: qty,
-                unitPriceText: formatRupiah(subtotal / Math.max(1, qty)),
-                subtotalText: formatRupiah(subtotal),
+                price: formatRupiah(unitPrice),
+                subtotal: formatRupiah(subtotal),
             };
         });
 
@@ -76,36 +74,20 @@ const ordersGrouped = computed(() => {
     <div>
         <div v-if="ordersGrouped.length === 0" class="text-black/50 text-sm">Belum ada pesanan.</div>
         <div v-for="group in ordersGrouped" :key="group.date" class="mb-8 mt-5">
-            <div class="text-black text-sm font-bold">{{ group.date }}</div>
+            <div class="text-black text-lg font-medium">{{ group.date }}</div>
 
             <div v-for="item in group.items" :key="item.id" class="mt-4 border-b border-black/10 pb-6">
                 <div class="grid grid-cols-[1fr_auto] gap-6">
                     <div class="min-w-0">
-                        <div class="grid gap-4">
-                            <div v-for="prod in item.products" :key="prod.key"
-                                class="grid grid-cols-[160px_1fr] gap-6">
-                                <div class="aspect-square w-40 overflow-hidden border border-black/10">
-                                    <img :src="prod.imageSrc" :alt="prod.imageAlt"
-                                        class="h-full w-full object-cover" />
-                                </div>
-
-                                <div class="min-w-0">
-                                    <div class="text-black text-sm font-medium uppercase leading-snug">
-                                        {{ prod.productName }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs uppercase">
-                                        {{ String(prod.color).toUpperCase() }} / {{ String(prod.size).toUpperCase() }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs">
-                                        {{ prod.quantity }} / {{ prod.unitPriceText }}
-                                    </div>
-                                    <div class="mt-1 text-black text-xs">
-                                        {{ prod.subtotalText }}
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Daftar produk dalam pesanan ini -->
+                        <div class="grid gap-6">
+                            <ProductCard v-for="prod in item.products" :key="prod.key" :imageSrc="prod.imageSrc"
+                                :imageAlt="prod.imageAlt" :productName="prod.productName" :color="prod.color"
+                                :size="prod.size" :price="prod.price" :quantity="prod.quantity"
+                                :subtotal="prod.subtotal" :showQuantity="true" :showSubtotal="true" imageSize="lg" />
                         </div>
 
+                        <!-- Total & tenggat -->
                         <div class="mt-4 pt-4 border-t border-black/10">
                             <div class="text-black text-xs">{{ item.totalText }}</div>
                             <div class="mt-2 text-black/60 text-xs uppercase">
@@ -120,18 +102,18 @@ const ordersGrouped = computed(() => {
                             <div class="grid gap-1">
                                 <NavIcon class="bg-white" :icon="PhInfo" ariaLabel="Informasi" :size="22" />
                                 <div class="grid grid-cols-2">
-                                    <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black">
+                                    <div class="bg-black px-3 py-3 text-xs uppercase text-white">
                                         Status:
                                     </div>
-                                    <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black text-right">
+                                    <div class="bg-black px-3 py-3 text-xs uppercase text-white text-right">
                                         {{ item.status }}
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2">
-                                    <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black">
+                                    <div class="bg-black px-3 py-3 text-xs uppercase text-white">
                                         Estimasi Selesai:
                                     </div>
-                                    <div class="bg-yellow px-3 py-3 text-xs font-medium uppercase text-black text-right">
+                                    <div class="bg-black px-3 py-3 text-xs uppercase text-white text-right">
                                         {{ item.estimatedFinish }}
                                     </div>
                                 </div>
