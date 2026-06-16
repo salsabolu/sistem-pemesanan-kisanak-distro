@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             KategoriSeeder::class,
             WarnaSeeder::class,
             UkuranSeeder::class,
+            BahanSeeder::class,
             DistroSeeder::class,
         ]);
 
@@ -56,6 +57,34 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'whatsapp' => '083811112222',
                 'alamat' => 'Jl. Klampis Ngasem No 67, Sukolilo, Surabaya',
+            ]
+        );
+
+        if (! $pembeli->hasRole('pembeli')) {
+            $pembeli->assignRole('pembeli');
+        }
+
+        $pembeli = User::firstOrCreate(
+            ['email' => 'nico@mail.com'],
+            [
+                'nama' => 'Nicholas Apparel',
+                'password' => Hash::make('password'),
+                'whatsapp' => '083833334444',
+                'alamat' => 'Jl. Mulyorejo No 55, Sukolilo, Surabaya',
+            ]
+        );
+
+        if (! $pembeli->hasRole('pembeli')) {
+            $pembeli->assignRole('pembeli');
+        }
+
+        $pembeli = User::firstOrCreate(
+            ['email' => 'suns@mail.com'],
+            [
+                'nama' => 'Suns Custom',
+                'password' => Hash::make('password'),
+                'whatsapp' => '083855556666',
+                'alamat' => 'Jl. Ir. Soekarno 185, Surabaya',
             ]
         );
 
