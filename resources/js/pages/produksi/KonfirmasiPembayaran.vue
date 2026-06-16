@@ -47,6 +47,8 @@ const totalPages = computed(() => props.pembayaran?.last_page ?? 1);
 
 const isDetailOpen = ref(false);
 const selectedItem = ref<any>(null);
+const isLightboxOpen = ref(false);
+const lightboxUrl = ref('');
 
 function openDetail(item: any) {
     selectedItem.value = item;
@@ -56,6 +58,16 @@ function openDetail(item: any) {
 function closeDetail() {
     isDetailOpen.value = false;
     selectedItem.value = null;
+}
+
+function openLightbox(path: string) {
+    lightboxUrl.value = buktiUrl(path);
+    isLightboxOpen.value = true;
+}
+
+function closeLightbox() {
+    isLightboxOpen.value = false;
+    lightboxUrl.value = '';
 }
 
 const items = computed(() => {
@@ -187,8 +199,8 @@ function paginationPages(): (number | string)[] {
                             <td colspan="6" class="px-4 py-6 text-center text-black/50">Belum ada pembayaran yang perlu
                                 dikonfirmasi.</td>
                         </tr>
-                        <tr v-for="item in items" :key="item.id" class="border-t border-black/5 cursor-pointer hover:bg-black/5"
-                            @click="openDetail(item)">
+                        <tr v-for="item in items" :key="item.id"
+                            class="border-t border-black/5 cursor-pointer hover:bg-black/5" @click="openDetail(item)">
                             <td class="px-4 py-3 text-black text-sm">{{ item.no }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
@@ -208,11 +220,11 @@ function paginationPages(): (number | string)[] {
                             <td class="px-4 py-3 text-black text-sm">{{ item.totalHarga }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <a v-if="item.buktiPembayaran" :href="buktiUrl(item.buktiPembayaran)"
-                                        target="_blank" class="px-3 py-1 rounded-full text-xs text-black bg-yellow"
-                                        @click.stop>
+                                    <button v-if="item.buktiPembayaran" type="button"
+                                        class="px-3 py-1 rounded-full text-xs text-black bg-yellow"
+                                        @click.stop="openLightbox(item.buktiPembayaran)">
                                         Lihat
-                                    </a>
+                                    </button>
 
                                     <label v-if="isKasir"
                                         class="px-3 py-1 rounded-full text-xs text-black bg-yellow cursor-pointer"
@@ -255,20 +267,23 @@ function paginationPages(): (number | string)[] {
                             <div class="text-black text-sm font-medium uppercase">Detail Pesanan</div>
                             <div class="mt-1 text-black/50 text-xs">ID: {{ selectedItem?.pesananId ?? '-' }}</div>
                         </div>
-                        <button type="button" class="px-4 py-2 text-sm border border-black" @click="closeDetail">Tutup</button>
+                        <button type="button" class="px-4 py-2 text-sm border border-black"
+                            @click="closeDetail">Tutup</button>
                     </div>
 
                     <div class="mt-4 divide-y divide-black/10">
                         <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
                             <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
-                            <div class="mt-1 text-black/50 text-xs uppercase">WARNA: 
-                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ?? '-').toUpperCase() }}
+                            <div class="mt-1 text-black/50 text-xs uppercase">WARNA:
+                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ??
+                                '-').toUpperCase() }}
                             </div>
-                            <div class="mt-1 text-black text-xs">JUMLAH: 
-                                {{ prod.pivot?.jumlah ?? 0 }} / HARGA: 
+                            <div class="mt-1 text-black text-xs">JUMLAH:
+                                {{ prod.pivot?.jumlah ?? 0 }} / HARGA:
                                 {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
                             </div>
-                            <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
+                            <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}
+                            </div>
                         </div>
                         <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
                             Tidak ada produk.
@@ -282,5 +297,26 @@ function paginationPages(): (number | string)[] {
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Lightbox Bukti Pembayaran -->
+    <div v-if="isLightboxOpen" class="fixed inset-0 z-[60] flex flex-col bg-black/90" @click.self="closeLightbox">
+        <!-- Header dengan logo Kisanak -->
+        <div class="flex items-center justify-between px-6 py-4 bg-white shrink-0">
+            <img src="/images/logo/logo-dark.png" alt="Kisanak Distro" class="h-8 w-auto" />
+            <button type="button"
+                class="text-black text-sm px-4 py-1 border border-black hover:bg-black hover:text-white transition-colors"
+                @click="closeLightbox">
+                Tutup
+            </button>
+        </div>
+
+        <!-- Preview gambar / PDF -->
+        <div class="flex-1 flex items-center justify-center p-6 overflow-auto">
+            <img v-if="!lightboxUrl.endsWith('.pdf')" :src="lightboxUrl" alt="Bukti Pembayaran"
+                class="max-h-full max-w-full object-contain shadow-lg" />
+            <iframe v-else :src="lightboxUrl" class="w-full h-full min-h-[70vh]" frameborder="0"
+                title="Bukti Pembayaran PDF" />
+        </div>
     </div>
 </template>
