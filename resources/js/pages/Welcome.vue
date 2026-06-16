@@ -21,15 +21,6 @@ const isLoginOpen = ref(false);
 const isRegisterOpen = ref(false);
 const isConfirmOpen = ref(false);
 
-const cartPreview = {
-    productName: 'Kaos Polos Dewasa Cotton Combed 30s',
-    color: 'Putih',
-    size: 'M',
-    quantity: 2,
-    subtotal: 'Rp80.000',
-    imageSrc: '/images/kaos-1.png',
-};
-
 function openLogin() {
     isProfileMenuOpen.value = false;
     isRegisterOpen.value = false;
@@ -183,8 +174,6 @@ watch(
         <LoginModal :open="isLoginOpen" @close="closeLogin" @open-register="openRegister" />
         <RegisterModal :open="isRegisterOpen" @close="closeRegister" />
 
-        <CartDrawer :open="isConfirmOpen" :productName="cartPreview.productName" :color="cartPreview.color"
-            :size="cartPreview.size" :quantity="cartPreview.quantity" :subtotal="cartPreview.subtotal"
-            :imageSrc="cartPreview.imageSrc" @close="isConfirmOpen = false" />
+        <CartDrawer :open="isConfirmOpen" @close="isConfirmOpen = false" />
     </div>
 </template>
