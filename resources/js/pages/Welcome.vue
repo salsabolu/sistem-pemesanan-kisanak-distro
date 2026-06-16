@@ -1,54 +1,12 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import {
-    PhMagnifyingGlass,
-    PhShoppingCartSimple,
-    PhUserCircle,
-} from '@phosphor-icons/vue';
-import { ref, watch } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
-import CtaButton from '@/components/CtaButton.vue';
+import Button from '@/components/Button.vue';
 import Footer from '@/components/Footer.vue';
-import LoginModal from '@/components/LoginModal.vue';
-import NavButton from '@/components/NavButton.vue';
-import NavIcon from '@/components/NavIcon.vue';
-import RegisterModal from '@/components/RegisterModal.vue';
+import PublicHeader from '@/components/PublicHeader.vue';
 
-const page = usePage<any>();
-
-const isProfileMenuOpen = ref(false);
-const isLoginOpen = ref(false);
-const isRegisterOpen = ref(false);
 const isConfirmOpen = ref(false);
-
-function openLogin() {
-    isProfileMenuOpen.value = false;
-    isRegisterOpen.value = false;
-    isLoginOpen.value = true;
-}
-
-function openRegister() {
-    isProfileMenuOpen.value = false;
-    isLoginOpen.value = false;
-    isRegisterOpen.value = true;
-}
-
-function closeLogin() {
-    isLoginOpen.value = false;
-}
-
-function closeRegister() {
-    isRegisterOpen.value = false;
-}
-
-watch(
-    () => page.props.flash,
-    (flash) => {
-        if (flash?.openLogin) openLogin();
-        if (flash?.openRegister) openRegister();
-    },
-    { immediate: true },
-);
 </script>
 
 <template>
@@ -57,55 +15,7 @@ watch(
 
     <div class="bg-white relative min-h-screen flex flex-col">
         <!-- Header -->
-        <header class="mx-auto w-full px-30 pt-6">
-            <div class="grid grid-cols-3 items-center">
-                <div />
-
-                <div class="flex items-center justify-center">
-                    <Link href="/" aria-label="Beranda">
-                        <img src="/images/logo/logo-dark.png" alt="Kisanak Distro" class="h-12 w-auto" />
-                    </Link>
-                </div>
-
-                <div class="flex items-center justify-end gap-1">
-                    <NavIcon :icon="PhMagnifyingGlass" ariaLabel="Cari" />
-                    <NavIcon :icon="PhShoppingCartSimple" ariaLabel="Keranjang" @click="isConfirmOpen = true" />
-                    <div class="relative">
-                        <NavIcon :icon="PhUserCircle" ariaLabel="Profil" :size="22"
-                            @click="isProfileMenuOpen = !isProfileMenuOpen" />
-
-                        <div v-if="isProfileMenuOpen" class="fixed inset-0 z-40" @click="isProfileMenuOpen = false" />
-
-                        <div v-if="isProfileMenuOpen"
-                            class="absolute right-0 top-full z-50 mt-2 w-28 overflow-hidden bg-white text-sm"
-                            style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12)" @click.stop>
-                            <template v-if="!$page.props.auth.user">
-                                <button type="button" class="text-black w-full px-3 py-2 text-left hover:bg-black/5"
-                                    @click="openLogin">
-                                    Masuk
-                                </button>
-                            </template>
-                            <template v-else>
-                                <Link href="/profil/riwayat-pesanan"
-                                    class="text-black w-full px-3 py-2 text-left hover:bg-black/5 block">
-                                    Profil
-                                </Link>
-                                <Link href="/logout" method="post" as="button"
-                                    class="text-black w-full px-3 py-2 text-left hover:bg-black/5 block">
-                                    Keluar
-                                </Link>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="mt-5 flex items-center justify-center gap-20 text-sm ">
-                <NavButton href="/" variant="active">BERANDA</NavButton>
-                <NavButton href="/katalog" variant="default">KATALOG</NavButton>
-                <NavButton href="/galeri" variant="default">GALERI</NavButton>
-            </nav>
-        </header>
+        <PublicHeader showNav activeNav="beranda" @cart-click="isConfirmOpen = true" />
 
         <!-- Main Content -->
         <main class="flex-1 mx-auto w-full px-30 pb-16 pt-6">
@@ -133,7 +43,7 @@ watch(
 
                     <div class="mt-6">
                         <Link href="/katalog">
-                            <CtaButton>Belanja Sekarang</CtaButton>
+                            <Button>Belanja Sekarang</Button>
                         </Link>
                     </div>
                 </section>
@@ -170,9 +80,6 @@ watch(
         </main>
 
         <Footer />
-
-        <LoginModal :open="isLoginOpen" @close="closeLogin" @open-register="openRegister" />
-        <RegisterModal :open="isRegisterOpen" @close="closeRegister" />
 
         <CartDrawer :open="isConfirmOpen" @close="isConfirmOpen = false" />
     </div>

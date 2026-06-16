@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import {
-    PhMagnifyingGlass,
-    PhShoppingCartSimple,
-    PhUserCircle,
-} from '@phosphor-icons/vue';
 import { computed, ref, watch } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
-import CtaButton from '@/components/CtaButton.vue';
-import LoginModal from '@/components/LoginModal.vue';
-import NavIcon from '@/components/NavIcon.vue';
-import RegisterModal from '@/components/RegisterModal.vue';
+import Button from '@/components/Button.vue';
+import Footer from '@/components/Footer.vue';
+import PublicHeader from '@/components/PublicHeader.vue';
 
 type ProdukData = {
     id: number; nama: string; harga: number | string; stok: number; stok_minimum: number;
@@ -31,31 +25,8 @@ type ProdukVariant = {
     ukuran?: { id: number; nama: string } | null;
 };
 
-const isProfileMenuOpen = ref(false);
-const isLoginOpen = ref(false);
-const isRegisterOpen = ref(false);
-
 const page = usePage();
-
-function openLogin() {
-    isProfileMenuOpen.value = false;
-    isRegisterOpen.value = false;
-    isLoginOpen.value = true;
-}
-
-function openRegister() {
-    isProfileMenuOpen.value = false;
-    isLoginOpen.value = false;
-    isRegisterOpen.value = true;
-}
-
-function closeLogin() {
-    isLoginOpen.value = false;
-}
-
-function closeRegister() {
-    isRegisterOpen.value = false;
-}
+const headerRef = ref<InstanceType<typeof PublicHeader> | null>(null);
 
 const props = defineProps<{
     produk?: ProdukData;
@@ -212,7 +183,7 @@ function formatRupiah(value: number) {
 
 function addToCart() {
     if (!page.props.auth.user) {
-        isLoginOpen.value = true;
+        headerRef.value?.openLogin();
         return;
     }
 
@@ -247,14 +218,6 @@ function addToCart() {
     isConfirmOpen.value = true;
 }
 
-function decQty() {
-    quantity.value = Math.max(1, quantity.value - 1);
-}
-
-function incQty() {
-    quantity.value += 1;
-}
-
 const subtotalText = computed(() => {
     return formatRupiah(unitPriceNumber.value * quantity.value);
 });
@@ -266,48 +229,7 @@ const subtotalText = computed(() => {
 
     <div class="bg-white min-h-screen">
         <!-- Header -->
-        <header class="mx-auto w-full px-30 pt-6">
-            <div class="grid grid-cols-3 items-center">
-                <div />
-
-                <div class="flex items-center justify-center">
-                    <Link href="/" aria-label="Beranda">
-                        <img src="/images/logo/logo-dark.png" alt="Kisanak Distro" class="h-12 w-auto" />
-                    </Link>
-                </div>
-
-                <div class="flex items-center justify-end gap-1">
-                    <NavIcon :icon="PhMagnifyingGlass" ariaLabel="Cari" />
-                    <NavIcon :icon="PhShoppingCartSimple" ariaLabel="Keranjang" @click="page.props.auth.user ? (isConfirmOpen = true) : (isLoginOpen = true)" />
-                    <div class="relative">
-                        <NavIcon :icon="PhUserCircle" ariaLabel="Profil" :size="22"
-                            @click="isProfileMenuOpen = !isProfileMenuOpen" />
-
-                        <div v-if="isProfileMenuOpen" class="fixed inset-0 z-40" @click="isProfileMenuOpen = false" />
-
-                        <div v-if="isProfileMenuOpen"
-                            class="absolute right-0 top-full z-50 mt-2 w-28 overflow-hidden bg-white text-sm"
-                            style="box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12)" @click.stop>
-                            <template v-if="!$page.props.auth.user">
-                                <button type="button" class="text-black w-full px-3 py-2 text-left hover:bg-black/5"
-                                    @click="openLogin">
-                                    Masuk
-                                </button>
-                            </template>
-                            <template v-else>
-                                <Link href="/profil/riwayat-pesanan"
-                                    class="text-black w-full px-3 py-2 text-left hover:bg-black/5 block">
-                                    Profil
-                                </Link>
-                                <Link href="/logout" method="post" as="button" class="text-black w-full px-3 py-2 text-left hover:bg-black/5 block">
-                                    Keluar
-                                </Link>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+        <PublicHeader ref="headerRef" @cart-click="isConfirmOpen = true" />
 
         <!-- Main Content -->
         <main class="mx-auto w-full px-30 pb-16 pt-6">
@@ -343,69 +265,54 @@ const subtotalText = computed(() => {
                     </div>
 
                     <div class="mt-5">
-                                        <div v-if="hasWarna">
-                                            <div class="text-sm font-medium uppercase">Warna</div>
-                                            <div class="mt-2 grid grid-cols-4 gap-2">
-                                                <button v-for="opt in colorOptions" :key="opt" type="button"
-                                                    class="px-3 py-1 text-xs uppercase" :style="{
-                                                        border: '1px solid black',
-                                                        backgroundColor: selectedColor === opt ? 'black' : 'transparent',
-                                                        color: selectedColor === opt ? 'white' : 'black',
-                                                    }" @click="selectedColor = opt">
-                                                    {{ opt }}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                    <div class="mt-5">
-                        <div class="text-sm font-medium uppercase">Ukuran</div>
-                        <div class="mt-2 grid grid-cols-4 gap-2">
-                            <button v-for="opt in sizeOptions" :key="opt" type="button" class="px-3 py-1 text-xs"
-                                :style="{
-                                    border: '1px solid black',
-                                    backgroundColor: selectedSize === opt ? 'black' : 'transparent',
-                                    color: selectedSize === opt ? 'white' : 'black',
-                                }" @click="selectedSize = opt">
-                                {{ opt }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mt-5">
-                        <div class="text-sm font-medium uppercase">Jumlah</div>
-                        <div class="mt-2 inline-flex items-center" :style="{ border: '1px solid black' }">
-                            <button type="button" class="h-8 w-8" @click="decQty">-</button>
-                            <div class="h-8 w-10 text-center text-sm leading-8"
-                                :style="{ borderLeft: '1px solid black', borderRight: '1px solid black' }">
-                                {{ quantity }}
+                        <div v-if="hasWarna">
+                            <div class="text-sm font-medium uppercase mb-2">Warna</div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <Button v-for="opt in colorOptions" :key="opt" variant="option"
+                                    :active="selectedColor === opt" @click="selectedColor = opt">
+                                    {{ opt }}
+                                </Button>
                             </div>
-                            <button type="button" class="h-8 w-8" @click="incQty">+</button>
                         </div>
                     </div>
 
                     <div class="mt-5">
-                        <CtaButton class="w-full" @click="addToCart">
+                        <div class="text-sm font-medium uppercase mb-2">Ukuran</div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <Button v-for="opt in sizeOptions" :key="opt" variant="option"
+                                :active="selectedSize === opt" @click="selectedSize = opt">
+                                {{ opt }}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <Button variant="quantity" label="Jumlah" v-model="quantity" />
+                    </div>
+
+                    <div class="mt-5">
+                        <Button class="w-full" @click="addToCart">
                             Tambah ke Keranjang
-                        </CtaButton>
+                        </Button>
                     </div>
                 </div>
             </section>
         </main>
 
-        <CartDrawer :open="isConfirmOpen" :productId="selectedVariant?.id ?? props.produk?.id ?? 0" :productName="productName"
-            :color="selectedColor" :size="selectedSize" :quantity="quantity" :subtotal="subtotalText"
-            :unitPrice="unitPriceNumber" :imageSrc="productImage" @close="isConfirmOpen = false" />
+        <!-- Footer -->
+        <Footer />
 
-        <LoginModal :open="isLoginOpen" @close="closeLogin" @open-register="openRegister" />
-        <RegisterModal :open="isRegisterOpen" @close="closeRegister" />
+        <CartDrawer :open="isConfirmOpen" :productId="selectedVariant?.id ?? props.produk?.id ?? 0"
+            :productName="productName" :color="selectedColor" :size="selectedSize" :quantity="quantity"
+            :subtotal="subtotalText" :unitPrice="unitPriceNumber" :imageSrc="productImage"
+            @close="isConfirmOpen = false" />
     </div>
 </template>
 
 <style scoped>
 .desc-truncate {
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
