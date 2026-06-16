@@ -1,10 +1,12 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 interface Props {
     variant?: 'primary' | 'option' | 'quantity' | 'solid' | 'light';
     active?: boolean;
-    label?: string; // used for button text if slot is empty, or quantity label
-    showLabel?: boolean; // toggle label for quantity
-    modelValue?: number; // for quantity variant
+    label?: string;       // button text or quantity label
+    showLabel?: boolean;  // toggle label for quantity variant
+    modelValue?: number;  // for quantity variant
     min?: number;
     max?: number;
 }
@@ -19,7 +21,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: 'click', event: MouseEvent): void;
     (e: 'update:modelValue', value: number): void;
 }>();
 
@@ -38,7 +39,7 @@ function increment() {
 
 <template>
     <!-- 1. Quantity Selector -->
-    <div v-if="variant === 'quantity'" class="flex flex-col gap-2">
+    <div v-if="variant === 'quantity'" class="flex flex-col gap-2" v-bind="$attrs">
         <div v-if="label && showLabel" class="text-sm font-medium uppercase text-black select-none">
             {{ label }}
         </div>
@@ -46,7 +47,7 @@ function increment() {
             <button type="button"
                 class="h-8 w-8 flex items-center justify-center font-bold text-black hover:bg-black hover:text-white transition-colors cursor-pointer select-none"
                 :disabled="modelValue <= min" :class="{ 'opacity-50 cursor-not-allowed': modelValue <= min }"
-                @click="decrement">
+                @click.stop="decrement">
                 -
             </button>
             <div class="h-8 w-10 text-center text-sm leading-8 text-black select-none font-medium"
@@ -56,7 +57,7 @@ function increment() {
             <button type="button"
                 class="h-8 w-8 flex items-center justify-center font-bold text-black hover:bg-black hover:text-white transition-colors cursor-pointer select-none"
                 :disabled="modelValue >= max" :class="{ 'opacity-50 cursor-not-allowed': modelValue >= max }"
-                @click="increment">
+                @click.stop="increment">
                 +
             </button>
         </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import CtaButton from '@/components/CtaButton.vue';
+import Button from '@/components/Button.vue';
 
 type ProductStatus = 'Terbaru' | 'Stok Menipis' | 'Stok Habis';
 
@@ -41,7 +41,7 @@ function goToDetail(id: number) {
                 <p class="text-black text-12px font-normal mt-1">{{ item.price }}</p>
 
                 <div class="mt-auto">
-                    <CtaButton class="w-full" @click="goToDetail(item.id)">Beli</CtaButton>
+                    <Button class="w-full" @click="goToDetail(item.id)">Beli</Button>
                 </div>
             </article>
         </div>
