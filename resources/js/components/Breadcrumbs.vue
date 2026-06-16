@@ -12,13 +12,19 @@ import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 type Props = {
     breadcrumbs: BreadcrumbItemType[];
+    class?: string;
+    separator?: string;
+    uppercase?: boolean;
 };
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    separator: 'chevron',
+    uppercase: false,
+});
 </script>
 
 <template>
-    <Breadcrumb>
+    <Breadcrumb :class="[props.class, uppercase ? 'uppercase' : '']">
         <BreadcrumbList>
             <template v-for="(item, index) in breadcrumbs" :key="index">
                 <BreadcrumbItem>
@@ -29,12 +35,25 @@ defineProps<Props>();
                         <BreadcrumbLink as-child>
                             <Link :href="item.href ?? '#'">{{
                                 item.title
-                            }}</Link>
+                                }}</Link>
                         </BreadcrumbLink>
                     </template>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator v-if="index !== breadcrumbs.length - 1" />
+                <BreadcrumbSeparator v-if="index !== breadcrumbs.length - 1">
+                    <template v-if="separator !== 'chevron'">
+                        {{ separator }}
+                    </template>
+                </BreadcrumbSeparator>
             </template>
         </BreadcrumbList>
     </Breadcrumb>
 </template>
+
+<style scoped>
+:deep(ol),
+:deep(li),
+:deep(a),
+:deep(span) {
+    color: black !important;
+}
+</style>

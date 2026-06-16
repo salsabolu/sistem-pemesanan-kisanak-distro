@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import CartDrawer from '@/components/CartDrawer.vue';
 import Button from '@/components/Button.vue';
+import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import Footer from '@/components/Footer.vue';
 import PublicHeader from '@/components/PublicHeader.vue';
 
@@ -58,6 +59,11 @@ const selectedVariant = computed<ProdukVariant | undefined>(() => {
 });
 
 const productName = computed(() => props.produk?.bahan?.kategori?.nama ?? props.produk?.nama ?? 'Kaos Polos Dewasa Cotton Combed 30s');
+
+const breadcrumbItems = computed(() => [
+    { title: 'Katalog', href: '/katalog' },
+    { title: productName.value },
+]);
 
 function toUnitPrice(value: unknown, fallback = 40000): number {
     const n = typeof value === 'number' ? value : Number(value);
@@ -233,9 +239,7 @@ const subtotalText = computed(() => {
 
         <!-- Main Content -->
         <main class="mx-auto w-full px-30 pb-16 pt-6">
-            <div class="text-black font-16px uppercase">
-                <Link href="/katalog" class="hover:underline">KATALOG</Link> / {{ productName.toUpperCase() }}
-            </div>
+            <Breadcrumbs :breadcrumbs="breadcrumbItems" separator="/" uppercase />
 
             <section class="mt-4 grid grid-cols-2 gap-8">
                 <div>
