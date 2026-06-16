@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import Button from '@/components/Button.vue';
 
@@ -30,6 +30,9 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 
+const page = usePage();
+const isLoggedIn = computed(() => !!page.props.auth.user);
+
 const cartItems = ref<CartItem[]>([]);
 
 watch(
@@ -42,6 +45,10 @@ watch(
 );
 
 function loadCart() {
+    if (!isLoggedIn.value) {
+        cartItems.value = [];
+        return;
+    }
     const raw = localStorage.getItem('kisanak_cart');
     if (raw) {
         try {

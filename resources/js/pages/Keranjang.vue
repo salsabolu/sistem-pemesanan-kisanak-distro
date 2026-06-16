@@ -75,13 +75,8 @@ function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(rounded)}`;
 }
 
-function decQty(item: CartItem) {
-    item.quantity = Math.max(1, item.quantity - 1);
-    saveCart();
-}
-
-function incQty(item: CartItem) {
-    item.quantity += 1;
+function updateQty(item: CartItem, newQty: number) {
+    item.quantity = newQty;
     saveCart();
 }
 
@@ -127,7 +122,7 @@ function submitOrder() {
     if (buktiPembayaran.value) {
         formData.append('bukti_pembayaran', buktiPembayaran.value);
     }
-    
+
     items.value.forEach((it, index) => {
         formData.append(`items[${index}][productId]`, String(it.productId));
         if (it.color) formData.append(`items[${index}][color]`, it.color);
@@ -162,7 +157,7 @@ function submitOrder() {
             <EmptyCart v-if="items.length === 0" />
 
             <section v-else class="mt-5 grid grid-cols-3 gap-10">
-                <OrderItemList :items="items" @dec-qty="decQty" @inc-qty="incQty" @remove-item="removeItem" />
+                <OrderItemList :items="items" @update-qty="updateQty" @remove-item="removeItem" />
                 <OrderForm :totalText="totalText" :distro="distro" @checkout="handleCheckout" />
             </section>
 
@@ -172,9 +167,8 @@ function submitOrder() {
 
         <Footer />
 
-
-
         <!-- Checkout Confirmation Modal -->
-        <CheckoutConfirmationModal :open="isCheckoutConfirmOpen" @close="isCheckoutConfirmOpen = false" @confirm="submitOrder" />
+        <CheckoutConfirmationModal :open="isCheckoutConfirmOpen" @close="isCheckoutConfirmOpen = false"
+            @confirm="submitOrder" />
     </div>
 </template>
