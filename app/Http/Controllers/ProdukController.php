@@ -41,10 +41,10 @@ class ProdukController extends Controller
 
         $allProduks = $query->get();
 
-        // Group products by normalized category name so catalog shows one card per unique category
+        // Group products by normalized product name so catalog shows one card per unique product name
         $grouped = $allProduks
             ->groupBy(function ($produk) {
-                return mb_strtolower(trim($produk->kategori?->nama ?? ''), 'UTF-8');
+                return mb_strtolower(trim($produk->nama), 'UTF-8');
             })
             ->map(function ($variants) {
                 $first = $variants->first();
@@ -78,20 +78,11 @@ class ProdukController extends Controller
 
         $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
 
-        $kategoriId = $produk->bahan?->id_kategori;
-        if ($kategoriId) {
-            $variants = Produk::whereHas('bahan', function ($q) use ($kategoriId) {
-                $q->where('id_kategori', $kategoriId);
-            })
+        // Get variants with the exact same product name
+        $variants = Produk::where('nama', '=', $produk->nama)
             ->where('is_active', true)
             ->with(['warna', 'ukuran'])
             ->get();
-        } else {
-            $variants = Produk::where('nama', '=', $produk->nama)
-                ->where('is_active', true)
-                ->with(['warna', 'ukuran'])
-                ->get();
-        }
 
         // Get all unique colors and sizes for products with the same name
         $warnaOptions = $variants->pluck('warna.nama')->filter()->unique()->values();

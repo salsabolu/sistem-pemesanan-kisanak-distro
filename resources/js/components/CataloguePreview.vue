@@ -30,12 +30,13 @@ function goToDetail(id: number) {
                     </div>
 
                     <div class="aspect-square w-full overflow-hidden">
-                        <img :src="item.imageSrc" :alt="item.name" class="h-full w-full object-cover border border-black" />
+                        <img :src="item.imageSrc" :alt="item.name"
+                            class="h-full w-full object-cover border border-black" />
                     </div>
                 </div>
 
                 <h3 class="text-black whitespace-pre-line text-12px font-medium uppercase leading-tight mt-3">
-                    {{ item.kategori }}
+                    {{ item.name }}
                 </h3>
 
                 <p class="text-black text-12px font-normal mt-1">{{ item.price }}</p>

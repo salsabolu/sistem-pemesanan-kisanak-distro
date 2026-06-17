@@ -76,7 +76,7 @@ watch(() => form.id_bahan, (newVal) => {
 
     const selectedBahan = bahanList.value.find(b => String(b.id) === newVal);
     if (selectedBahan) {
-        form.nama = selectedBahan.nama;
+        form.nama = selectedBahan.kategori?.nama ?? '';
     } else {
         form.nama = '';
     }

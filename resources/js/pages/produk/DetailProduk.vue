@@ -58,7 +58,7 @@ const selectedVariant = computed<ProdukVariant | undefined>(() => {
     return variants.value[0];
 });
 
-const productName = computed(() => props.produk?.bahan?.kategori?.nama ?? props.produk?.nama ?? 'Kaos Polos Dewasa Cotton Combed 30s');
+const productName = computed(() => props.produk?.nama ?? '');
 
 const breadcrumbItems = computed(() => [
     { title: 'Katalog', href: '/katalog' },
