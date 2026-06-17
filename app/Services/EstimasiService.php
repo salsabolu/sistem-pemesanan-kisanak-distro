@@ -12,27 +12,24 @@ use Carbon\Carbon;
  *
  * Menghitung estimasi_selesai pesanan dengan mempertimbangkan:
  *   1. WPD  – Waktu Produksi Dasar   = Σ (bahan.durasi_produksi × jumlah)     [menit]
- *   2. WTB  – Waktu Tunggu Bahan     = max(bahan.durasi_restok) jika stok < jumlah [menit]
+ *   2. WTB  – Waktu Tunggu Bahan     = max(bahan.durasi_restok) jika stok < 0 (stok dikurangi sebelumnya) [menit]
  *   3. WTA  – Waktu Tunggu Antrean   = Σ WPD pesanan lain "Dalam Produksi"    [menit]
  *   4. Jam operasional distro dipatuhi; produksi dijeda di luar jam kerja dan
  *      dilanjutkan pada hari kerja berikutnya.
  *
  * Formula: estimasi_selesai = sekarang (WIB) + WTA + WTB + WPD (mematuhi jam operasional)
  *
- * TIMEZONE: Semua kalkulasi menggunakan Asia/Jakarta (WIB) karena data jam_buka / jam_tutup
- * disimpan dalam WIB, sementara config('app.timezone') di proyek ini adalah 'UTC'.
- *
  * Satuan: durasi_produksi & durasi_restok disimpan dalam MENIT di database.
  */
 class EstimasiService
 {
-    /** Timezone lokal distro — selalu WIB agar cocok dengan jam_buka/jam_tutup di DB. */
+    // Timezone lokal distro — selalu WIB agar cocok dengan jam_buka/jam_tutup di DB
     private const TZ = 'Asia/Jakarta';
 
-    /** Menit persiapan setelah jam buka sebelum produksi bisa dimulai (bersih-bersih, nyalakan mesin). */
+    // Persiapan sebelum produksi bisa dimulai (bersih-bersih, nyalakan mesin)
     private const MENIT_PERSIAPAN = 15;
 
-    // ─── Peta nama hari Indonesia → nomor Carbon ISO ──────────────────────────
+    // Nama hari Indonesia → nomor Carbon ISO
     private const HARI_MAP = [
         'senin'   => Carbon::MONDAY,
         'selasa'  => Carbon::TUESDAY,
@@ -55,7 +52,7 @@ class EstimasiService
     {
         $pesanan->loadMissing('detailPesanan.produk.bahan');
 
-        // ─── Ambil konfigurasi jam operasional ────────────────────────────────
+        // Ambil konfigurasi jam operasional
         $distro       = Distro::first();
         $jamBuka      = $distro?->jam_buka   ?? '08:00:00';   // WIB
         $jamTutup     = $distro?->jam_tutup  ?? '17:00:00';   // WIB
@@ -65,7 +62,7 @@ class EstimasiService
         $hariBukaNum  = self::HARI_MAP[$hariBuka]  ?? Carbon::MONDAY;
         $hariTutupNum = self::HARI_MAP[$hariTutup] ?? Carbon::SATURDAY;
 
-        // ─── 1. WPD (Waktu Produksi Dasar) ────────────────────────────────────
+        // 1. WPD (Waktu Produksi Dasar)
         $wpd = 0;
         foreach ($pesanan->detailPesanan as $detail) {
             $bahan = $detail->produk?->bahan;
@@ -74,21 +71,23 @@ class EstimasiService
             }
         }
 
-        // ─── 2. WTB (Waktu Tunggu Bahan) ──────────────────────────────────────
-        // Aturan: IF bahan.stok < jumlah THEN WTB = bahan.durasi_restok
+        // 2. WTB (Waktu Tunggu Bahan)
+        // Aturan: IF bahan.stok < 0 THEN WTB = bahan.durasi_restok (stok dikurangi sebelumnya)
         // Ambil nilai terbesar karena restok berjalan paralel
         $wtb = 0;
         foreach ($pesanan->detailPesanan as $detail) {
             $bahan = $detail->produk?->bahan;
-            if ($bahan && $bahan->stok < $detail->jumlah) {
+            // Stok sudah dikurangi sebelumnya di controller.
+            // Jika stok < 0, berarti stok aslinya sebelum dikurangi tidak mencukupi.
+            if ($bahan && $bahan->stok < 0) {
                 $wtb = max($wtb, $bahan->durasi_restok);
             }
         }
 
-        // ─── 3. WTA (Waktu Tunggu Antrean) ────────────────────────────────────
+        // 3. WTA (Waktu Tunggu Antrean)
         $wta = self::hitungWTA($pesanan->id);
 
-        // ─── 4. Hitung titik waktu akhir, menggunakan timezone WIB ────────────
+        // 4. Hitung titik waktu akhir, menggunakan timezone WIB
         $totalMenit = $wta + $wtb + $wpd;
 
         // Carbon::now(self::TZ) → waktu sekarang dalam WIB

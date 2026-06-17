@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nama' => 'Pemilik',
                 'password' => Hash::make('password'),
-                'whatsapp' => '083811111111',
+                'whatsapp' => '083849290987',
                 'alamat' => null,
             ]
         );
@@ -91,5 +91,20 @@ class DatabaseSeeder extends Seeder
         if (! $pembeli->hasRole('pembeli')) {
             $pembeli->assignRole('pembeli');
         }
+
+        $pembeli = User::firstOrCreate(
+            ['email' => 'fesylia@mail.com'],
+            [
+                'nama' => 'Fesylia',
+                'password' => Hash::make('password'),
+                'whatsapp' => '085738830205',
+                'alamat' => 'Semarang',
+            ]
+        );
+
+        if (! $pembeli->hasRole('pembeli')) {
+            $pembeli->assignRole('pembeli');
+        }
+        
     }
 }

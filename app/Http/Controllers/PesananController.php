@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pesanan;
 use App\Models\Pembayaran;
+use App\Services\WhatsappService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -84,6 +85,12 @@ class PesananController extends Controller
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
                 if ($qty > 0 && $produk->bahan) {
                     $produk->bahan->decrement('stok', $qty);
+                    
+                    // Cek jika stok menipis
+                    $produk->bahan->refresh();
+                    if ($produk->bahan->stok <= $produk->bahan->stok_minimum) {
+                        app(WhatsappService::class)->notifikasiStokMenipis($produk->bahan);
+                    }
                 }
             }
         }
@@ -97,6 +104,16 @@ class PesananController extends Controller
                     $produk->bahan->increment('stok', $qty);
                 }
             }
+        }
+
+        // Reset estimasi_selesai jika pesanan dibatalkan
+        if (isset($validated['status']) && $validated['status'] === 'Dibatalkan') {
+            $pesanan->update(['estimasi_selesai' => null]);
+        }
+
+        // Kirim notifikasi WhatsApp jika status berubah
+        if (isset($validated['status']) && $oldStatus !== $validated['status']) {
+            app(WhatsappService::class)->notifikasiStatusPesanan($pesanan, $validated['status']);
         }
 
         return redirect()->back()->with('success', 'Pesanan berhasil diperbarui.');
@@ -123,6 +140,12 @@ class PesananController extends Controller
                 $qty = (int) ($produk->pivot->jumlah ?? 0);
                 if ($qty > 0 && $produk->bahan) {
                     $produk->bahan->decrement('stok', $qty);
+                    
+                    // Cek jika stok menipis
+                    $produk->bahan->refresh();
+                    if ($produk->bahan->stok <= $produk->bahan->stok_minimum) {
+                        app(WhatsappService::class)->notifikasiStokMenipis($produk->bahan);
+                    }
                 }
             }
         }
@@ -136,6 +159,16 @@ class PesananController extends Controller
                     $produk->bahan->increment('stok', $qty);
                 }
             }
+        }
+
+        // Reset estimasi_selesai jika pesanan dibatalkan
+        if ($validated['status'] === 'Dibatalkan') {
+            $pesanan->update(['estimasi_selesai' => null]);
+        }
+
+        // Kirim notifikasi WhatsApp jika status berubah
+        if ($oldStatus !== $validated['status']) {
+            app(WhatsappService::class)->notifikasiStatusPesanan($pesanan, $validated['status']);
         }
 
         return redirect()->back()->with('success', 'Status pesanan berhasil diperbarui.');

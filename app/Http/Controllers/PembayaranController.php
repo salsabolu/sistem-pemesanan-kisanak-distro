@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pembayaran;
 use App\Services\EstimasiService;
+use App\Services\WhatsappService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -83,12 +84,21 @@ class PembayaranController extends Controller
                     $qty = (int) ($produk->pivot->jumlah ?? 0);
                     if ($qty > 0 && $produk->bahan) {
                         $produk->bahan->decrement('stok', $qty);
+
+                        // Cek jika stok menipis
+                        $produk->bahan->refresh();
+                        if ($produk->bahan->stok <= $produk->bahan->stok_minimum) {
+                            app(WhatsappService::class)->notifikasiStokMenipis($produk->bahan);
+                        }
                     }
                 }
 
                 // Rule-Based System: hitung estimasi selesai
                 $estimasi = EstimasiService::hitungEstimasi($pesanan);
                 $pesanan->update(['estimasi_selesai' => $estimasi]);
+
+                // Kirim notifikasi WhatsApp ke pembeli
+                app(WhatsappService::class)->notifikasiStatusPesanan($pesanan, 'Dalam Produksi');
             }
         }
 
