@@ -105,6 +105,20 @@ class DatabaseSeeder extends Seeder
         if (! $pembeli->hasRole('pembeli')) {
             $pembeli->assignRole('pembeli');
         }
+
+        $pembeli = User::firstOrCreate(
+            ['email' => 'salma@mail.com'],
+            [
+                'nama' => 'Salma',
+                'password' => Hash::make('password'),
+                'whatsapp' => '081929230333',
+                'alamat' => 'Bandung',
+            ]
+        );
+
+        if (! $pembeli->hasRole('pembeli')) {
+            $pembeli->assignRole('pembeli');
+        }
         
     }
 }
