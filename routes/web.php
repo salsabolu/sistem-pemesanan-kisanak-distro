@@ -29,6 +29,10 @@ Route::get('/galeri', function () {
 Route::get('/katalog/produk/{produk}', [ProdukController::class, 'show'])->name('produk.detail');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/katalog/produk/{produk}/kustomisasi', [ProdukController::class, 'kustomisasi'])->name('produk.kustomisasi');
+});
+
+Route::middleware('auth')->group(function () {
     Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang');
     Route::post('/keranjang/checkout', [KeranjangController::class, 'checkout'])->name('keranjang.checkout');
     

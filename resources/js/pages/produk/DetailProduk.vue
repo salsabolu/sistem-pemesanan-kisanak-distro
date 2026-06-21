@@ -294,11 +294,17 @@ const subtotalText = computed(() => {
                         <Button variant="quantity" label="Jumlah" v-model="quantity" />
                     </div>
 
-                    <div class="mt-5">
-                        <Button class="w-full" @click="addToCart">
+                    <div class="flex flex-row gap-2 mt-5">
+                        <Link :href="`/katalog/produk/${props.produk?.id}/kustomisasi`" class="block w-full">
+                            <Button class="w-full" variant="primary">
+                                Kustomisasi Desain
+                            </Button>
+                        </Link>
+                        <Button class="w-full" variant="primary" @click="addToCart">
                             Tambah ke Keranjang
                         </Button>
                     </div>
+
                 </div>
             </section>
         </main>

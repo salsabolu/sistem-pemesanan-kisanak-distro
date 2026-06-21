@@ -24,4 +24,14 @@ export default defineConfig({
             },
         }),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'vendor-three': ['three'],
+                    'vendor-fabric': ['fabric'],
+                },
+            },
+        },
+    },
 });

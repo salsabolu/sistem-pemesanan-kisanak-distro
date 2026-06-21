@@ -96,6 +96,30 @@ class ProdukController extends Controller
         ]);
     }
 
+    public function kustomisasi(Produk $produk)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('katalog')->with('openLogin', true);
+        }
+
+        $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
+
+        // Ambil semua warna aktif dari tabel warna untuk palet kustomisasi
+        $warnaOptions = Warna::where('is_active', true)
+            ->select(['id', 'nama', 'kode'])
+            ->get()
+            ->map(fn($w) => [
+                'id'   => $w->id,
+                'nama' => $w->nama,
+                'kode' => $w->kode, // Format CMYK: "C,M,Y,K"
+            ]);
+
+        return Inertia::render('produk/KustomisasiProduk', [
+            'produk'       => $produk,
+            'warnaOptions' => $warnaOptions,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
