@@ -26,6 +26,8 @@ type ProdukData = {
     harga: number;
     deskripsi: string | null;
     gambar: string | null;
+    durasi_produksi: number;
+    is_customizable: boolean;
     is_active: boolean;
     bahan?: BahanData | null;
 };
@@ -46,6 +48,8 @@ const form = useForm({
     nama: '',
     harga: 0,
     deskripsi: '',
+    durasi_produksi: 0,
+    is_customizable: false as boolean,
     is_active: true as boolean,
 });
 
@@ -84,6 +88,7 @@ watch(() => form.id_bahan, (newVal) => {
 
 function openTambah() {
     editingItem.value = null; form.reset(); form.clearErrors();
+    form.is_customizable = false;
     form.is_active = true;
     gambarFile.value = null; gambarPreview.value = null;
     isNameManuallyEdited.value = false;
@@ -96,6 +101,8 @@ function openEdit(item: ProdukData) {
     form.nama = item.nama;
     form.harga = item.harga;
     form.deskripsi = item.deskripsi ?? '';
+    form.durasi_produksi = item.durasi_produksi;
+    form.is_customizable = item.is_customizable;
     form.is_active = item.is_active;
     gambarFile.value = null;
     gambarPreview.value = (item.gambar && item.gambar !== '-') ? item.gambar : null;
@@ -113,6 +120,8 @@ function submitForm() {
     fd.append('nama', form.nama);
     fd.append('harga', String(form.harga));
     fd.append('deskripsi', form.deskripsi);
+    fd.append('durasi_produksi', String(form.durasi_produksi));
+    fd.append('is_customizable', form.is_customizable ? '1' : '0');
     fd.append('is_active', form.is_active ? '1' : '0');
     if (gambarFile.value) fd.append('gambar', gambarFile.value);
 
@@ -262,6 +271,13 @@ const bahanList = computed(() => props.bahan ?? []);
                     </div>
 
                     <div>
+                        <label class="block text-black text-sm mb-1">Durasi Produksi (Menit) <span class="text-red-500">*</span></label>
+                        <input v-model.number="form.durasi_produksi" type="number" min="0"
+                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
+                            required />
+                    </div>
+
+                    <div>
                         <label class="block text-black text-sm mb-1">Status</label>
                         <div class="flex items-center gap-3 mt-2">
                             <button type="button"
@@ -272,6 +288,20 @@ const bahanList = computed(() => props.bahan ?? []);
                                     :class="form.is_active ? 'translate-x-6' : 'translate-x-1'" />
                             </button>
                             <span class="text-sm text-black">{{ form.is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-black text-sm mb-1">Dapat Dikustomisasi?</label>
+                        <div class="flex items-center gap-3 mt-2">
+                            <button type="button"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                                :class="form.is_customizable ? 'bg-black' : 'bg-black/20'"
+                                @click="form.is_customizable = !form.is_customizable">
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                    :class="form.is_customizable ? 'translate-x-6' : 'translate-x-1'" />
+                            </button>
+                            <span class="text-sm text-black">{{ form.is_customizable ? 'Ya' : 'Tidak' }}</span>
                         </div>
                     </div>
 

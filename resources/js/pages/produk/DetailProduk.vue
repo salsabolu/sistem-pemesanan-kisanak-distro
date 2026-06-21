@@ -13,6 +13,7 @@ type ProdukData = {
     kategori?: { id: number; nama: string };
     warna?: { id: number; nama: string } | null;
     ukuran?: { id: number; nama: string };
+    is_customizable: boolean;
 };
 
 type ProdukVariant = {
@@ -295,7 +296,7 @@ const subtotalText = computed(() => {
                     </div>
 
                     <div class="flex flex-row gap-2 mt-5">
-                        <Link :href="`/katalog/produk/${props.produk?.id}/kustomisasi`" class="block w-full">
+                        <Link v-if="props.produk?.is_customizable" :href="`/katalog/produk/${props.produk?.id}/kustomisasi`" class="block w-full">
                             <Button class="w-full" variant="primary">
                                 Kustomisasi Desain
                             </Button>

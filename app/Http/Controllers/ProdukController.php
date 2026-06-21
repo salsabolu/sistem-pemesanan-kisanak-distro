@@ -102,6 +102,10 @@ class ProdukController extends Controller
             return redirect()->route('katalog')->with('openLogin', true);
         }
 
+        if (!$produk->is_customizable) {
+            abort(404, 'Produk ini tidak dapat dikustomisasi.');
+        }
+
         $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
 
         // Ambil semua warna aktif dari tabel warna untuk palet kustomisasi
@@ -128,6 +132,8 @@ class ProdukController extends Controller
             'harga'     => 'required|integer|min:0',
             'deskripsi' => 'nullable|string',
             'gambar'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'durasi_produksi' => 'required|integer|min:0',
+            'is_customizable' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -139,6 +145,7 @@ class ProdukController extends Controller
         }
 
         $validated['deskripsi'] = $validated['deskripsi'] ?: '-';
+        $validated['is_customizable'] = filter_var($request->input('is_customizable', false), FILTER_VALIDATE_BOOLEAN);
         $validated['is_active'] = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
 
         Produk::create($validated);
@@ -155,6 +162,8 @@ class ProdukController extends Controller
             'harga'     => 'required|integer|min:0',
             'deskripsi' => 'nullable|string',
             'gambar'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'durasi_produksi' => 'required|integer|min:0',
+            'is_customizable' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -166,6 +175,7 @@ class ProdukController extends Controller
         }
 
         $validated['deskripsi'] = $validated['deskripsi'] ?: '-';
+        $validated['is_customizable'] = filter_var($request->input('is_customizable', $produk->is_customizable), FILTER_VALIDATE_BOOLEAN);
         $validated['is_active'] = filter_var($request->input('is_active', $produk->is_active), FILTER_VALIDATE_BOOLEAN);
 
         $produk->update([
@@ -174,6 +184,8 @@ class ProdukController extends Controller
             'harga'     => $validated['harga'],
             'deskripsi' => $validated['deskripsi'],
             'gambar'    => $validated['gambar'] ?? $produk->gambar,
+            'durasi_produksi' => $validated['durasi_produksi'],
+            'is_customizable' => $validated['is_customizable'],
             'is_active' => $validated['is_active'],
         ]);
 

@@ -15,7 +15,6 @@ type BahanData = {
     nama: string;
     stok: number;
     stok_minimum: number;
-    durasi_produksi: number;
     durasi_restok: number;
     is_active: boolean;
     kategori?: { id: number; nama: string };
@@ -43,7 +42,6 @@ const form = useForm({
     nama: '',
     stok: 0,
     stok_minimum: 0,
-    durasi_produksi: 0,
     durasi_restok: 0,
     is_active: true as boolean,
 });
@@ -92,7 +90,6 @@ function openEdit(item: BahanData) {
     form.nama = item.nama;
     form.stok = item.stok;
     form.stok_minimum = item.stok_minimum;
-    form.durasi_produksi = item.durasi_produksi;
     form.durasi_restok = item.durasi_restok;
     form.is_active = item.is_active;
     showModal.value = true;
@@ -269,14 +266,6 @@ const ukuranList = computed(() => props.ukuran ?? []);
                         <label class="block text-black text-sm mb-1">Stok Minimum <span
                                 class="text-red-500">*</span></label>
                         <input v-model.number="form.stok_minimum" type="number" min="0"
-                            class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
-                            required />
-                    </div>
-
-                    <div>
-                        <label class="block text-black text-sm mb-1">Durasi Produksi (Menit) <span
-                                class="text-red-500">*</span></label>
-                        <input v-model.number="form.durasi_produksi" type="number" min="0"
                             class="w-full border border-black/20 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black"
                             required />
                     </div>

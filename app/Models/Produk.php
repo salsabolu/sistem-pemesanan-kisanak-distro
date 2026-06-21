@@ -22,17 +22,19 @@ class Produk extends Model
         'harga',
         'deskripsi',
         'gambar',
+        'durasi_produksi',
+        'is_customizable',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_customizable' => 'boolean',
     ];
 
     protected $appends = [
         'stok',
         'stok_minimum',
-        'durasi_produksi',
         'durasi_restok',
         'status',
     ];
@@ -45,11 +47,6 @@ class Produk extends Model
     public function getStokMinimumAttribute()
     {
         return $this->bahan?->stok_minimum ?? 0;
-    }
-
-    public function getDurasiProduksiAttribute()
-    {
-        return $this->bahan?->durasi_produksi ?? 0;
     }
 
     public function getDurasiRestokAttribute()

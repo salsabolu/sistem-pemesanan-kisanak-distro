@@ -65,9 +65,9 @@ class EstimasiService
         // 1. WPD (Waktu Produksi Dasar)
         $wpd = 0;
         foreach ($pesanan->detailPesanan as $detail) {
-            $bahan = $detail->produk?->bahan;
-            if ($bahan) {
-                $wpd += $bahan->durasi_produksi * $detail->jumlah;
+            $produk = $detail->produk;
+            if ($produk) {
+                $wpd += $produk->durasi_produksi * $detail->jumlah;
             }
         }
 
@@ -120,9 +120,9 @@ class EstimasiService
 
         $wta = 0;
         foreach ($detailAntrean as $detail) {
-            $bahan = $detail->produk?->bahan;
-            if ($bahan) {
-                $wta += $bahan->durasi_produksi * $detail->jumlah;
+            $produk = $detail->produk;
+            if ($produk) {
+                $wta += $produk->durasi_produksi * $detail->jumlah;
             }
         }
 

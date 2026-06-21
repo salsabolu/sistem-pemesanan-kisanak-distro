@@ -43,7 +43,6 @@ return new class extends Migration
             $table->string('nama', 255);
             $table->integer('stok');
             $table->integer('stok_minimum');
-            $table->integer('durasi_produksi'); // Menit
             $table->integer('durasi_restok'); // Menit ditampilkan dalam format Hari
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -60,6 +59,8 @@ return new class extends Migration
             $table->integer('harga');
             $table->text('deskripsi')->nullable();
             $table->string('gambar');
+            $table->integer('durasi_produksi')->default(0); // Menit
+            $table->boolean('is_customizable')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

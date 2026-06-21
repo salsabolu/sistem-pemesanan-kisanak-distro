@@ -35,7 +35,6 @@ class BahanController extends Controller
             'nama'           => 'required|string|max:255',
             'stok'           => 'required|integer|min:0',
             'stok_minimum'   => 'required|integer|min:0',
-            'durasi_produksi'=> 'required|integer|min:0',
             'durasi_restok'  => 'required|integer|min:0',
             'is_active'      => 'required|boolean',
         ]);
@@ -55,7 +54,6 @@ class BahanController extends Controller
             'nama'           => 'required|string|max:255',
             'stok'           => 'required|integer|min:0',
             'stok_minimum'   => 'required|integer|min:0',
-            'durasi_produksi'=> 'required|integer|min:0',
             'durasi_restok'  => 'required|integer|min:0',
             'is_active'      => 'required|boolean',
         ]);
