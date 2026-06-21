@@ -31,7 +31,7 @@ const nama = computed(() => {
         </div>
 
         <nav class="flex flex-col gap-1 text-sm flex-1">
-            <div class="text-black/50 text-xs uppercase mb-1">Aksi Cepat</div>
+            <div class="text-black/50 text-xs uppercase mb-1">Produksi</div>
             <Link href="/dasbor" class="text-black py-1 hover:underline"
                 :class="{ 'font-medium': currentUrl.startsWith('/dasbor') }">Dasbor</Link>
             <Link href="/produksi/konfirmasi-pembayaran" class="text-black py-1 hover:underline"
@@ -68,8 +68,7 @@ const nama = computed(() => {
         </nav>
 
         <div class="mt-auto pt-6">
-            <Link href="/logout" method="post" as="button"
-                class="text-red-500 text-sm hover:underline">
+            <Link href="/logout" method="post" as="button" class="text-red-500 text-sm hover:underline">
                 Keluar
             </Link>
             <!-- <button type="button" class="text-red-500 text-sm uppercase hover:underline">Keluar</button> -->
