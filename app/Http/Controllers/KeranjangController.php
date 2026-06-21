@@ -41,6 +41,7 @@ class KeranjangController extends Controller
         $validated = $request->validate([
             'tenggat_waktu' => 'required|date',
             'bukti_pembayaran' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4096',
+            'rekening' => 'required|in:BCA,BRI',
             'items' => 'required|array|min:1',
             'items.*.productId' => 'required|integer|exists:produk,id',
             'items.*.color' => 'nullable|string',
@@ -90,6 +91,7 @@ class KeranjangController extends Controller
             'id_pembeli' => $userId,
             'id_pesanan' => $pesanan->id,
             'bukti_pembayaran' => $path,
+            'rekening' => $validated['rekening'],
             'status' => 'Belum Konfirmasi',
         ]);
 

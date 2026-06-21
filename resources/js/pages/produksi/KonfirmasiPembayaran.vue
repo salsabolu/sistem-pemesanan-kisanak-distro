@@ -8,6 +8,7 @@ type PembayaranDB = {
     id_pembeli: number;
     id_pesanan: number;
     bukti_pembayaran: string | null;
+    rekening: string | null;
     status: string;
     pembeli?: { id: number; nama: string; whatsapp: string };
     pesanan?: {
@@ -84,6 +85,7 @@ const items = computed(() => {
             whatsapp: p.pembeli?.whatsapp ?? '-',
             produkText: produkCount > 0 ? `${produkCount} Produk` : '-',
             totalHarga: formatRupiah(p.pesanan?.total ?? 0),
+            rekening: p.rekening ?? '-',
             buktiPembayaran: p.bukti_pembayaran,
             statusPembayaran: p.status as 'Belum Konfirmasi' | 'Terkonfirmasi',
             produk: produkList,
@@ -188,6 +190,7 @@ function paginationPages(): (number | string)[] {
                             </th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">Produk</th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">Total Harga</th>
+                            <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">Rekening</th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">Bukti Pembayaran
                             </th>
                             <th class="text-left px-4 py-3 text-black font-medium text-xs uppercase">Status Pembayaran
@@ -196,7 +199,7 @@ function paginationPages(): (number | string)[] {
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="6" class="px-4 py-6 text-center text-black/50">Belum ada pembayaran yang perlu
+                            <td colspan="7" class="px-4 py-6 text-center text-black/50">Belum ada pembayaran yang perlu
                                 dikonfirmasi.</td>
                         </tr>
                         <tr v-for="item in items" :key="item.id"
@@ -218,6 +221,7 @@ function paginationPages(): (number | string)[] {
                                 <div class="text-black text-sm font-medium uppercase">{{ item.produkText }}</div>
                             </td>
                             <td class="px-4 py-3 text-black text-sm">{{ item.totalHarga }}</td>
+                            <td class="px-4 py-3 text-black text-sm">{{ item.rekening }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <button v-if="item.buktiPembayaran" type="button"
@@ -276,7 +280,7 @@ function paginationPages(): (number | string)[] {
                             <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
                             <div class="mt-1 text-black/50 text-xs uppercase">WARNA:
                                 {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ??
-                                '-').toUpperCase() }}
+                                    '-').toUpperCase() }}
                             </div>
                             <div class="mt-1 text-black text-xs">JUMLAH:
                                 {{ prod.pivot?.jumlah ?? 0 }} / HARGA:

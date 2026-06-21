@@ -109,8 +109,9 @@ const pesananAktif = computed(() => props.pesananAktif ?? []);
 const isCheckoutConfirmOpen = ref(false);
 const tenggatWaktu = ref('');
 const buktiPembayaran = ref<File | null>(null);
+const rekeningDipilih = ref<'BCA' | 'BRI'>('BCA');
 
-function handleCheckout(payload: { tenggatWaktu: string; buktiPembayaran: File | null }) {
+function handleCheckout(payload: { tenggatWaktu: string; buktiPembayaran: File | null; rekening: 'BCA' | 'BRI' }) {
     if (items.value.length === 0) {
         showAlert('Keranjang masih kosong', 'error');
         return;
@@ -125,6 +126,7 @@ function handleCheckout(payload: { tenggatWaktu: string; buktiPembayaran: File |
     }
     tenggatWaktu.value = payload.tenggatWaktu;
     buktiPembayaran.value = payload.buktiPembayaran;
+    rekeningDipilih.value = payload.rekening;
     isCheckoutConfirmOpen.value = true;
 }
 
@@ -133,6 +135,7 @@ function submitOrder() {
 
     const formData = new FormData();
     formData.append('tenggat_waktu', tenggatWaktu.value);
+    formData.append('rekening', rekeningDipilih.value);
     if (buktiPembayaran.value) {
         formData.append('bukti_pembayaran', buktiPembayaran.value);
     }

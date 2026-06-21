@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_pembeli');
             $table->unsignedInteger('id_pesanan');
             $table->string('bukti_pembayaran')->nullable();
+            $table->enum('rekening', ['BCA', 'BRI'])->nullable();
             $table->enum('status', ['Menunggu', 'Belum Konfirmasi', 'Terkonfirmasi'])->default('Menunggu');
             $table->timestamps();
             

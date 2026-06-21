@@ -14,11 +14,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'checkout', payload: { tenggatWaktu: string, buktiPembayaran: File | null }): void;
+    (e: 'checkout', payload: { tenggatWaktu: string, buktiPembayaran: File | null, rekening: 'BCA' | 'BRI' }): void;
 }>();
 
 const tenggatWaktu = ref('');
 const buktiPembayaran = ref<File | null>(null);
+const rekening = ref<'BCA' | 'BRI'>('BCA');
 
 function handleFileChange(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -30,7 +31,7 @@ function handleFileChange(e: Event) {
 }
 
 function handleCheckoutClick() {
-    emit('checkout', { tenggatWaktu: tenggatWaktu.value, buktiPembayaran: buktiPembayaran.value });
+    emit('checkout', { tenggatWaktu: tenggatWaktu.value, buktiPembayaran: buktiPembayaran.value, rekening: rekening.value });
 }
 
 function copyToClipboard(text: string) {
@@ -57,16 +58,24 @@ function copyToClipboard(text: string) {
         </div>
 
         <div v-if="distro" class="mt-4 p-3 bg-black/5 text-xs text-black border border-black/10">
-            <div class="font-medium uppercase mb-1">Transfer ke Rekening:</div>
-            <div class="flex items-center justify-between py-1 border-b border-black/5 last:border-0">
-                <div>BCA: {{ distro.rekening_bca }}</div>
+            <div class="font-medium uppercase mb-2">Pilih Rekening Transfer:</div>
+            
+            <div class="flex items-center justify-between py-1 border-b border-black/5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="rekening" value="BCA" name="rekening" class="accent-black" />
+                    BCA: {{ distro.rekening_bca }}
+                </label>
                 <button type="button" @click="copyToClipboard(distro.rekening_bca)"
                     class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BCA">
                     <PhCopy :size="16" />
                 </button>
             </div>
+            
             <div class="flex items-center justify-between py-1">
-                <div>BRI: {{ distro.rekening_bri }}</div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="rekening" value="BRI" name="rekening" class="accent-black" />
+                    BRI: {{ distro.rekening_bri }}
+                </label>
                 <button type="button" @click="copyToClipboard(distro.rekening_bri)"
                     class="text-black hover:opacity-75 focus:outline-none" title="Salin nomor rekening BRI">
                     <PhCopy :size="16" />
