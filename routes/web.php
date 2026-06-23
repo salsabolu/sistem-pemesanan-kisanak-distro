@@ -30,6 +30,7 @@ Route::get('/katalog/produk/{produk}', [ProdukController::class, 'show'])->name(
 
 Route::middleware('auth')->group(function () {
     Route::get('/katalog/produk/{produk}/kustomisasi', [ProdukController::class, 'kustomisasi'])->name('produk.kustomisasi');
+    Route::post('/katalog/produk/{produk}/kustomisasi/simpan', [ProdukController::class, 'simpanDesain'])->name('produk.simpan-desain');
 });
 
 Route::middleware('auth')->group(function () {

@@ -7,6 +7,9 @@ use App\Models\Kategori;
 use App\Models\Warna;
 use App\Models\Ukuran;
 use App\Models\Bahan;
+use App\Models\Desain;
+use App\Models\Teks;
+use App\Models\Gambar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -108,20 +111,67 @@ class ProdukController extends Controller
 
         $produk->load(['bahan.kategori', 'bahan.warna', 'bahan.ukuran']);
 
-        // Ambil semua warna aktif dari tabel warna untuk palet kustomisasi
-        $warnaOptions = Warna::where('is_active', true)
-            ->select(['id', 'nama', 'kode'])
-            ->get()
-            ->map(fn($w) => [
-                'id'   => $w->id,
-                'nama' => $w->nama,
-                'kode' => $w->kode, // Format CMYK: "C,M,Y,K"
-            ]);
+        // Dapatkan semua varian produk dengan nama yang sama
+        $variants = Produk::where('nama', '=', $produk->nama)
+            ->where('is_active', true)
+            ->with(['warna'])
+            ->get();
+
+        // Ambil warna unik dari varian-varian tersebut untuk palet kustomisasi
+        $warnaOptions = $variants->pluck('warna')->filter()->unique('id')->values()->map(fn($w) => [
+            'id'   => $w->id,
+            'nama' => $w->nama,
+            'kode' => $w->kode, // Format CMYK: "C,M,Y,K"
+        ]);
 
         return Inertia::render('produk/KustomisasiProduk', [
             'produk'       => $produk,
             'warnaOptions' => $warnaOptions,
         ]);
+    }
+
+    /**
+     * Simpan desain kustomisasi ke database.
+     * Data yang disimpan: desain_json, teks, gambar.
+     */
+    public function simpanDesain(Request $request, Produk $produk)
+    {
+        $validated = $request->validate([
+            'desain_json' => 'required|string',
+            'teks'        => 'nullable|array',
+            'teks.*.teks' => 'required|string|max:255',
+        ]);
+
+        // Buat record desain (tanpa id_detail_pesanan untuk draft)
+        // Untuk saat ini, simpan sebagai draft dengan id_detail_pesanan = null
+        // Nanti bisa di-link ke detail_pesanan saat checkout
+        $desain = Desain::create([
+            'id_detail_pesanan' => null,
+            'desain_json'       => $validated['desain_json'],
+        ]);
+
+        // Simpan teks
+        if (!empty($validated['teks'])) {
+            foreach ($validated['teks'] as $teksData) {
+                Teks::create([
+                    'id_desain' => $desain->id,
+                    'teks'      => $teksData['teks'],
+                ]);
+            }
+        }
+
+        // Simpan file gambar (jika ada)
+        if ($request->hasFile('gambar_files')) {
+            foreach ($request->file('gambar_files') as $file) {
+                $path = $file->store('desain-gambar', 'public');
+                Gambar::create([
+                    'id_desain' => $desain->id,
+                    'file'      => '/storage/' . $path,
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Desain berhasil disimpan.');
     }
 
     public function store(Request $request)

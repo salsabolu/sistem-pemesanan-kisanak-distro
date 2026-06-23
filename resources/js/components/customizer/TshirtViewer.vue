@@ -1,28 +1,26 @@
 <!--
-  KompOnen TshirtViewer — Penampil Model 3D
+  Komponen TshirtViewer — Penampil Model 3D
   ==========================================
-  Menampilkan model 3D (.glb/.gltf) menggunakan Three.js dengan fitur:
-  - Muat model dari path yang diberikan, atau gunakan placeholder sederhana
-  - Otomatis center & scale model ke tengah viewport
-  - Ganti warna model secara reaktif via prop `color`
-  - Terapkan texture desain dari canvas Fabric.js ke permukaan model
+  Menampilkan model 3D (.obj/.glb/.gltf) menggunakan Three.js dengan fitur:
+  - Muat model OBJ dengan texture mapping langsung dari canvas
+  - Fallback ke model GLB/GLTF jika OBJ tidak tersedia
   - Orbit controls: rotasi, zoom in/out
+  - Texture dari SVG pattern canvas di-map langsung ke UV model
   - Konfigurasi fleksibel untuk berbagai model 3D
 -->
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, shallowRef } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /**
  * Props yang diterima oleh komponen.
- * - color: warna HEX untuk diterapkan ke seluruh mesh model
- * - designCanvas: elemen canvas HTML dari Fabric.js untuk texture desain
- * - modelPath: path ke file model 3D (.glb/.gltf), opsional
+ * - designCanvas: elemen canvas HTML (composite) untuk texture desain
+ * - modelPath: path ke file model 3D (.obj atau .glb/.gltf)
  */
 const props = defineProps<{
-    color: string;
     designCanvas: HTMLCanvasElement | null;
     modelPath?: string;
 }>();
@@ -40,17 +38,17 @@ const scene = shallowRef<THREE.Scene | null>(null);
 const camera = shallowRef<THREE.PerspectiveCamera | null>(null);
 const controls = shallowRef<OrbitControls | null>(null);
 const designTexture = shallowRef<THREE.CanvasTexture | null>(null);
+const textureMaterial = shallowRef<THREE.MeshPhongMaterial | null>(null);
 const animationId = ref<number>(0);
 
-/** Referensi ke grup model yang dimuat, untuk manipulasi nanti */
-const modelGroup = shallowRef<THREE.Group | null>(null);
+/** Referensi ke model yang dimuat */
+const modelObject = shallowRef<THREE.Object3D | null>(null);
 
-// ─── Warna Latar Belakang Scene ───
-const BG_COLOR = 0xf5f0e8;
+// ─── Warna & Background ───
+const BG_COLOR = 0x1a1a2e;
 
 /**
- * Membuat placeholder kaos sederhana menggunakan ExtrudeGeometry.
- * Dipakai jika modelPath tidak disediakan atau gagal dimuat.
+ * Membuat placeholder kaos sederhana jika model tidak tersedia.
  */
 function createPlaceholderTshirt(): THREE.Group {
     const group = new THREE.Group();
@@ -79,10 +77,8 @@ function createPlaceholderTshirt(): THREE.Group {
     });
     geometry.center();
 
-    const material = new THREE.MeshStandardMaterial({
-        color: props.color || '#CCCCCC',
-        roughness: 0.75,
-        metalness: 0.0,
+    const material = textureMaterial.value || new THREE.MeshPhongMaterial({
+        color: '#CCCCCC',
         side: THREE.DoubleSide,
     });
 
@@ -90,30 +86,43 @@ function createPlaceholderTshirt(): THREE.Group {
     mesh.name = 'tshirt-body';
     group.add(mesh);
 
-    // Plane overlay untuk desain di area dada
-    const planeGeom = new THREE.PlaneGeometry(0.55, 0.55);
-    const planeMat = new THREE.MeshStandardMaterial({
-        transparent: true,
-        opacity: 1,
-        roughness: 0.8,
-        metalness: 0.0,
-        depthWrite: false,
-    });
-    const planeMesh = new THREE.Mesh(planeGeom, planeMat);
-    planeMesh.name = 'design-overlay';
-    planeMesh.position.set(0, 0.06, 0.065);
-    group.add(planeMesh);
-
     return group;
 }
 
 /**
- * Memuat model GLTF/GLB dari path yang diberikan.
- * Otomatis:
- * - Center model ke origin (0,0,0)
- * - Scale model agar tingginya ~2 unit
- * - Tag semua mesh sebagai 'tshirt-body' untuk perubahan warna
- * - Tambahkan overlay plane untuk desain di area dada
+ * Memuat model OBJ dari path yang diberikan.
+ * Texture langsung di-map ke material semua mesh model (sesuai referensi main_s.js).
+ */
+function loadOBJModel(path: string): Promise<THREE.Object3D> {
+    return new Promise((resolve, reject) => {
+        const loader = new OBJLoader();
+        loader.load(
+            path,
+            (object) => {
+                // Terapkan texture material ke semua mesh
+                object.traverse((node) => {
+                    if ((node as THREE.Mesh).isMesh) {
+                        const mesh = node as THREE.Mesh;
+                        if (textureMaterial.value) {
+                            mesh.material = textureMaterial.value;
+                        }
+                        mesh.geometry.computeVertexNormals();
+                    }
+                });
+
+                resolve(object);
+            },
+            undefined,
+            (error) => {
+                console.warn('[TshirtViewer] Gagal memuat model OBJ:', error);
+                reject(error);
+            },
+        );
+    });
+}
+
+/**
+ * Memuat model GLTF/GLB dari path yang diberikan (fallback).
  */
 function loadGLTFModel(path: string): Promise<THREE.Group> {
     return new Promise((resolve, reject) => {
@@ -123,82 +132,36 @@ function loadGLTFModel(path: string): Promise<THREE.Group> {
             (gltf) => {
                 const model = gltf.scene;
 
-                // Hitung bounding box untuk center & scale
+                // Center & scale
                 model.updateMatrixWorld(true);
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
 
-                // Pindahkan model ke origin dengan menggunakan wrapper
-                // Hal ini menghindari isu penskalaan di sekitar pivot yang salah (offset pivot)
                 const wrapper = new THREE.Group();
                 model.position.x = -center.x;
                 model.position.y = -center.y;
                 model.position.z = -center.z;
                 wrapper.add(model);
 
-                // Scale agar muat di viewport (~2 unit tinggi)
                 const maxDim = Math.max(size.x, size.y, size.z) || 1;
                 const scaleFactor = 2.0 / maxDim;
                 wrapper.scale.setScalar(scaleFactor);
 
-                // Hitung ulang bounding box setelah transformasi
-                wrapper.updateMatrixWorld(true);
-                const scaledBox = new THREE.Box3().setFromObject(wrapper);
-                const scaledSize = scaledBox.getSize(new THREE.Vector3());
-                const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
-
-                // Tag semua mesh sebagai 'tshirt-body' & clone material
+                // Terapkan texture ke semua mesh
                 wrapper.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
-                        child.name = 'tshirt-body';
-
-                        if (Array.isArray(child.material)) {
-                            child.material = child.material.map((m) => {
-                                const c = m.clone();
-                                if ('color' in c) c.color.set(props.color || '#CCCCCC');
-                                if ('roughness' in c) c.roughness = Math.max(c.roughness as number, 0.4);
-                                return c;
-                            });
-                        } else {
-                            child.material = child.material.clone();
-                            const mat = child.material as THREE.MeshStandardMaterial;
-                            if (mat.color) mat.color.set(props.color || '#CCCCCC');
-                            if ('roughness' in mat) mat.roughness = Math.max(mat.roughness as number, 0.4);
+                        if (textureMaterial.value) {
+                            child.material = textureMaterial.value;
                         }
                     }
                 });
-
-                // Tambahkan overlay plane untuk desain di area dada
-                const overlayW = scaledSize.x * 0.4;
-                const overlayH = scaledSize.y * 0.35;
-                const planeGeom = new THREE.PlaneGeometry(overlayW, overlayH);
-                const planeMat = new THREE.MeshStandardMaterial({
-                    transparent: true,
-                    opacity: 1,
-                    roughness: 0.8,
-                    metalness: 0.0,
-                    depthWrite: false,
-                    polygonOffset: true,
-                    polygonOffsetFactor: -1,
-                });
-                const planeMesh = new THREE.Mesh(planeGeom, planeMat);
-                planeMesh.name = 'design-overlay';
-                
-                // Posisi di depan-tengah area dada (sedikit di atas pusat)
-                // Karena model dibungkus wrapper, posisinya relatif terhadap wrapper
-                planeMesh.position.set(
-                    scaledCenter.x,
-                    scaledCenter.y + scaledSize.y * 0.1,
-                    scaledBox.max.z + 0.01,
-                );
-                wrapper.add(planeMesh);
 
                 resolve(wrapper);
             },
             undefined,
             (error) => {
-                console.warn('[TshirtViewer] Gagal memuat model GLTF, menggunakan placeholder:', error);
+                console.warn('[TshirtViewer] Gagal memuat model GLTF:', error);
                 reject(error);
             },
         );
@@ -206,17 +169,38 @@ function loadGLTFModel(path: string): Promise<THREE.Group> {
 }
 
 /**
- * Memuat model 3D (GLTF atau placeholder) lalu tambahkan ke scene.
- * Otomatis menyesuaikan posisi kamera agar model berada tepat di tengah.
+ * Membuat texture material dari canvas desain.
+ */
+function createTextureMaterial(canvas: HTMLCanvasElement): THREE.MeshPhongMaterial {
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    designTexture.value = texture;
+
+    const material = new THREE.MeshPhongMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+    });
+    textureMaterial.value = material;
+
+    return material;
+}
+
+/**
+ * Memuat model 3D dan tambahkan ke scene.
+ * Prioritas: OBJ > GLTF/GLB > Placeholder
  */
 async function loadModel(s: THREE.Scene) {
-    let model: THREE.Group;
-    let isGLTF = false;
+    let model: THREE.Object3D;
+    const isOBJ = props.modelPath?.toLowerCase().endsWith('.obj');
 
     if (props.modelPath) {
         try {
-            model = await loadGLTFModel(props.modelPath);
-            isGLTF = true;
+            if (isOBJ) {
+                model = await loadOBJModel(props.modelPath);
+            } else {
+                model = await loadGLTFModel(props.modelPath);
+            }
         } catch {
             model = createPlaceholderTshirt();
         }
@@ -224,35 +208,79 @@ async function loadModel(s: THREE.Scene) {
         model = createPlaceholderTshirt();
     }
 
-    s.add(model);
-    modelGroup.value = model;
-
-    // Sesuaikan kamera agar model berada tepat di tengah viewport
-    if (camera.value && controls.value) {
+    // Untuk model OBJ, perlu center & scale manual
+    if (isOBJ) {
+        model.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
 
-        // Arahkan kamera ke pusat model
-        controls.value.target.copy(center);
+        // Scale agar muat di viewport
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const scaleFactor = 2.5 / maxDim;
+        model.scale.setScalar(scaleFactor);
+        model.scale.x = -scaleFactor; // Mirror the model to fix bad UV mapping in tshirt1.obj
 
-        // Posisi kamera: mundur sejauh proporsional dari model
-        const distance = isGLTF
-            ? Math.max(size.x, size.y) * 2.0
-            : 2.8;
-        camera.value.position.set(center.x, center.y, center.z + distance);
-        camera.value.updateProjectionMatrix();
-        controls.value.update();
+        // Center
+        model.updateMatrixWorld(true);
+        const newBox = new THREE.Box3().setFromObject(model);
+        const newCenter = newBox.getCenter(new THREE.Vector3());
+        model.position.sub(newCenter);
     }
 
-    // Terapkan texture desain jika sudah tersedia
-    if (props.designCanvas) {
-        applyDesignTexture(props.designCanvas);
+    s.add(model);
+    modelObject.value = model;
+
+    // Sesuaikan kamera agar model berada di tengah viewport
+    if (camera.value && controls.value) {
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        controls.value.target.copy(center);
+
+        const distance = Math.max(size.x, size.y, size.z) * 2.0;
+        camera.value.position.set(
+            center.x + distance * 0.5,
+            center.y,
+            center.z + distance,
+        );
+        camera.value.updateProjectionMatrix();
+        controls.value.update();
     }
 }
 
 /**
- * Inisialisasi scene Three.js: renderer, kamera, lampu, dan kontrol orbit.
+ * Terapkan canvas desain sebagai texture pada model 3D.
+ */
+function applyDesignTexture(canvas: HTMLCanvasElement) {
+    if (!scene.value) return;
+
+    // Buat atau update texture material
+    if (!textureMaterial.value) {
+        createTextureMaterial(canvas);
+    } else {
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        designTexture.value = tex;
+        textureMaterial.value.map = tex;
+        textureMaterial.value.needsUpdate = true;
+    }
+
+    // Terapkan ke semua mesh di model
+    if (modelObject.value) {
+        modelObject.value.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                (child as THREE.Mesh).material = textureMaterial.value!;
+            }
+        });
+    }
+}
+
+/**
+ * Inisialisasi scene Three.js: renderer, kamera, lampu, kontrol orbit.
  */
 function initScene() {
     if (!containerRef.value) return;
@@ -265,13 +293,13 @@ function initScene() {
     const r = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        preserveDrawingBuffer: true, // Diperlukan untuk download screenshot
+        preserveDrawingBuffer: true,
     });
     r.setSize(width, height);
     r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     r.setClearColor(BG_COLOR, 1);
     r.toneMapping = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.0;
+    r.toneMappingExposure = 1.2;
     container.appendChild(r.domElement);
     renderer.value = r;
 
@@ -281,36 +309,47 @@ function initScene() {
     scene.value = s;
 
     // --- Kamera ---
-    const cam = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    cam.position.set(0, 0, 2.8);
+    const cam = new THREE.PerspectiveCamera(30, width / height, 0.1, 1200);
+    cam.position.set(0, 0, 5);
     camera.value = cam;
 
-    // --- Pencahayaan ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    s.add(ambientLight);
+    // --- Pencahayaan (sesuai referensi main_s.js) ---
+    s.add(new THREE.AmbientLight(0x666666, 1.5));
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight1.position.set(2, 3, 4);
-    s.add(dirLight1);
+    const lights = [
+        { color: 0xffffff, intensity: 0.8, position: { x: -500, y: 320, z: 500 } },
+        { color: 0xffffff, intensity: 0.5, position: { x: 200, y: 50, z: 500 } },
+        { color: 0xffffff, intensity: 0.6, position: { x: 0, y: 100, z: -500 } },
+        { color: 0xffffff, intensity: 0.4, position: { x: 300, y: -100, z: 300 } },
+    ];
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    dirLight2.position.set(-2, 1, -2);
-    s.add(dirLight2);
+    lights.forEach((l) => {
+        const dirLight = new THREE.DirectionalLight(l.color, l.intensity);
+        dirLight.position.set(l.position.x, l.position.y, l.position.z);
+        dirLight.lookAt(0, 0, 0);
+        s.add(dirLight);
+    });
 
-    const hemiLight = new THREE.HemisphereLight(0xffeedd, 0xf5f0e8, 0.5);
+    // Fill light dari bawah
+    const hemiLight = new THREE.HemisphereLight(0xffeedd, 0x1a1a2e, 0.4);
     s.add(hemiLight);
 
-    // --- Kontrol Orbit (rotasi & zoom) ---
+    // --- Kontrol Orbit ---
     const ctrl = new OrbitControls(cam, r.domElement);
     ctrl.enableDamping = true;
     ctrl.dampingFactor = 0.08;
     ctrl.enablePan = false;
-    ctrl.minDistance = 1.2;
-    ctrl.maxDistance = 6;
+    ctrl.minDistance = 1.0;
+    ctrl.maxDistance = 10;
     ctrl.minPolarAngle = Math.PI / 6;
     ctrl.maxPolarAngle = Math.PI / 1.5;
     ctrl.target.set(0, 0, 0);
     controls.value = ctrl;
+
+    // --- Buat texture material dari designCanvas jika sudah ada ---
+    if (props.designCanvas) {
+        createTextureMaterial(props.designCanvas);
+    }
 
     // --- Muat model 3D ---
     loadModel(s);
@@ -333,48 +372,6 @@ function initScene() {
     animate();
 }
 
-/**
- * Terapkan canvas Fabric.js sebagai texture pada overlay desain di model 3D.
- */
-function applyDesignTexture(canvas: HTMLCanvasElement) {
-    if (!scene.value) return;
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.flipY = true;
-    tex.needsUpdate = true;
-    designTexture.value = tex;
-
-    // Cari plane overlay dan terapkan texture
-    scene.value.traverse((child) => {
-        if (child instanceof THREE.Mesh && child.name === 'design-overlay') {
-            const mat = child.material as THREE.MeshStandardMaterial;
-            mat.map = tex;
-            mat.needsUpdate = true;
-        }
-    });
-}
-
-/**
- * Perbarui warna semua mesh model (kecuali overlay desain).
- */
-function updateColor(hex: string) {
-    if (!scene.value) return;
-
-    scene.value.traverse((child) => {
-        if (child instanceof THREE.Mesh && child.name === 'tshirt-body') {
-            const mat = child.material;
-            if (Array.isArray(mat)) {
-                mat.forEach((m) => {
-                    if ('color' in m) { m.color.set(hex); m.needsUpdate = true; }
-                });
-            } else if ('color' in mat) {
-                (mat as THREE.MeshStandardMaterial).color.set(hex);
-                mat.needsUpdate = true;
-            }
-        }
-    });
-}
-
 /** Tangani resize viewport */
 function handleResize() {
     if (!containerRef.value || !renderer.value || !camera.value) return;
@@ -388,8 +385,9 @@ function handleResize() {
 }
 
 // ─── Watchers ───
-watch(() => props.color, (c) => { if (c) updateColor(c); });
-watch(() => props.designCanvas, (c) => { if (c) applyDesignTexture(c); });
+watch(() => props.designCanvas, (c) => {
+    if (c) applyDesignTexture(c);
+});
 
 // ─── Lifecycle ───
 onMounted(() => {
@@ -400,27 +398,55 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('resize', handleResize);
     if (animationId.value) cancelAnimationFrame(animationId.value);
-    if (renderer.value) { renderer.value.dispose(); renderer.value.domElement.remove(); }
+    if (renderer.value) {
+        renderer.value.dispose();
+        renderer.value.domElement.remove();
+    }
     if (controls.value) controls.value.dispose();
 });
 
-defineExpose({ getRenderer: () => renderer.value });
+defineExpose({
+    getRenderer: () => renderer.value,
+});
 </script>
 
 <template>
-    <div ref="containerRef" class="tshirt-viewer"></div>
+    <div ref="containerRef" class="tshirt-viewer">
+        <!-- Hint tooltip -->
+        <div class="tshirt-viewer__hint">
+            Drag to rotate • Scroll to zoom
+        </div>
+    </div>
 </template>
 
 <style scoped>
 .tshirt-viewer {
+    position: relative;
     width: 100%;
     height: 100%;
     overflow: hidden;
+    background: #1a1a2e;
 }
 
 .tshirt-viewer :deep(canvas) {
     display: block;
     width: 100% !important;
     height: 100% !important;
+}
+
+.tshirt-viewer__hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    padding: 6px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    pointer-events: none;
+    white-space: nowrap;
 }
 </style>

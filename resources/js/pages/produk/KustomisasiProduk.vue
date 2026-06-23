@@ -1,18 +1,18 @@
 <!--
-  Halaman KustomisasiProduk — Kustomisasi Desain Produk 3D
+  Halaman KustomisasiProduk — T-Shirt Customization Studio
   ==========================================================
-  Layout: Kiri = Model 3D (Three.js), Kanan = Panel kontrol bertab
+  Layout 3 kolom:
+  1. Sidebar Kiri  = Panel kontrol (Warna, Teks, Gambar)
+  2. Tengah        = Canvas Editor 2D (SVG Pattern)
+  3. Kanan         = 3D Preview (Three.js + OBJ)
 
-  Tab yang tersedia:
-  1. Warna  — Pilih warna kaos dari palet (data dari tabel warna, format CMYK)
-  2. Teks   — Tambah & edit teks (font, ukuran, style, alignment, warna)
-  3. Gambar — Upload gambar, resize, rotate
-
-  Fitur umum:
-  - Reset desain
+  Fitur:
+  - Warna kaos dari tabel warna (seeder)
+  - Tambah & edit teks SVG
+  - Upload gambar overlay
+  - Simpan desain ke database (desain_json, teks, gambar)
   - Download screenshot PNG
-  - Rotasi & zoom model 3D (orbit controls)
-  - Tombol kembali ke halaman detail produk
+  - Rotasi & zoom model 3D
 -->
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -21,11 +21,20 @@ import {
     PhArrowLeft,
     PhCamera,
     PhArrowCounterClockwise,
+    PhPalette,
+    PhTextT,
+    PhImage,
+    PhFloppyDisk,
+    PhTrash,
+    PhUploadSimple,
+    PhTextBolder,
+    PhTextItalic,
 } from '@phosphor-icons/vue';
 import TshirtViewer from '@/components/customizer/TshirtViewer.vue';
 import DesignEditor from '@/components/customizer/DesignEditor.vue';
 import Button from '@/components/Button.vue';
-import { cmykToHex, PRESET_COLORS } from '@/lib/colorUtils';
+import { cmykToHex } from '@/lib/colorUtils';
+import type { SvgZone, SvgText } from '@/lib/svgPatternUtils';
 import type * as THREE from 'three';
 
 // ─── Tipe Data ───
@@ -60,17 +69,17 @@ const threeRenderer = ref<THREE.WebGLRenderer | null>(null);
 type TabId = 'warna' | 'teks' | 'gambar';
 const activeTab = ref<TabId>('warna');
 
-const tabs: { id: TabId; label: string }[] = [
-    { id: 'warna', label: 'Warna' },
-    { id: 'teks', label: 'Teks' },
-    { id: 'gambar', label: 'Gambar' },
+const tabs: { id: TabId; label: string; icon: any }[] = [
+    { id: 'warna', label: 'Warna', icon: PhPalette },
+    { id: 'teks', label: 'Teks', icon: PhTextT },
+    { id: 'gambar', label: 'Gambar', icon: PhImage },
 ];
 
 // ═══════════════════════════════════════════
-// TAB WARNA — Palet warna dari database
+// TAB WARNA — Palet warna dari database (seeder)
 // ═══════════════════════════════════════════
 
-/** Palet warna: gunakan data dari database, fallback ke preset */
+/** Palet warna dari tabel warna */
 const colorPalette = computed(() => {
     if (props.warnaOptions && props.warnaOptions.length > 0) {
         return props.warnaOptions.map((w) => ({
@@ -80,72 +89,90 @@ const colorPalette = computed(() => {
             hex: cmykToHex(w.kode),
         }));
     }
-    return PRESET_COLORS.map((c, i) => ({
-        id: i,
-        name: c.name,
-        cmyk: '',
-        hex: c.hex,
-    }));
+    return [];
 });
 
-const selectedColorIndex = ref(0);
-const selectedColor = computed(() => colorPalette.value[selectedColorIndex.value]?.hex ?? '#CCCCCC');
+const selectedColorIndex = ref(-1);
+const selectedColor = computed(() => {
+    if (selectedColorIndex.value < 0) return undefined;
+    return colorPalette.value[selectedColorIndex.value]?.hex;
+});
 
 function selectColor(index: number) {
     selectedColorIndex.value = index;
 }
 
 // ═══════════════════════════════════════════
-// TAB TEKS — Kontrol teks lengkap
+// TAB TEKS — Kontrol teks SVG
 // ═══════════════════════════════════════════
 
-const textInput = ref('Teks Anda');
+const hasSelectedText = ref(false);
+const textInput = ref('');
 const textFontFamily = ref('Arial');
-const textFontSize = ref(40);
-const textFontWeight = ref<'normal' | 'bold'>('normal');
-const textFontStyle = ref<'normal' | 'italic'>('normal');
-const textAlign = ref<'left' | 'center' | 'right'>('center');
+const textFontSize = ref('80');
 const textColor = ref('#FFFFFF');
+const textBold = ref(false);
+const textItalic = ref(false);
 
 /** Daftar font yang tersedia */
 const fontFamilies = [
-    'Arial',
-    'Helvetica',
-    'Times New Roman',
-    'Georgia',
-    'Courier New',
-    'Verdana',
-    'Impact',
-    'Comic Sans MS',
+    'Arial', 'Helvetica', 'Times New Roman', 'Georgia',
+    'Courier New', 'Verdana', 'Impact', 'Comic Sans MS',
+    'Advent Pro', 'Kumar One', 'Roboto', 'Raleway',
 ];
 
 /** Ukuran font yang tersedia */
-const fontSizes = [12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96];
+const fontSizes = ['24', '32', '40', '48', '56', '64', '72', '80', '96', '120', '160', '200'];
 
-/** Tambahkan teks baru ke canvas */
-function handleAddText() {
-    editorRef.value?.addText({
-        text: textInput.value,
-        fontFamily: textFontFamily.value,
-        fontSize: textFontSize.value,
-        fontWeight: textFontWeight.value,
-        fontStyle: textFontStyle.value,
-        textAlign: textAlign.value,
-        fill: textColor.value,
-    });
+function handleUpdateText() {
+    if (hasSelectedText.value && editorRef.value) {
+        editorRef.value.updateActiveText({
+            text: textInput.value,
+            fontFamily: textFontFamily.value,
+            fontSize: textFontSize.value,
+            fill: textColor.value,
+        });
+    }
 }
 
-/** Update teks yang sedang aktif/terpilih di canvas */
-function handleUpdateText() {
-    editorRef.value?.updateActiveText({
-        text: textInput.value,
-        fontFamily: textFontFamily.value,
-        fontSize: textFontSize.value,
-        fontWeight: textFontWeight.value,
-        fontStyle: textFontStyle.value,
-        textAlign: textAlign.value,
-        fill: textColor.value,
-    });
+function handleToggleBold() {
+    textBold.value = !textBold.value;
+    editorRef.value?.setActiveBold(textBold.value);
+}
+
+function handleToggleItalic() {
+    textItalic.value = !textItalic.value;
+    editorRef.value?.setActiveItalic(textItalic.value);
+}
+
+function addNewText() {
+    editorRef.value?.addText('Teks Baru');
+}
+
+function handleSelection(obj: any) {
+    if (obj && obj.type === 'i-text') {
+        textInput.value = obj.text;
+        textFontFamily.value = obj.fontFamily;
+        textFontSize.value = String(Math.round(obj.fontSize));
+        textColor.value = obj.fill;
+        textBold.value = obj.fontWeight === 'bold';
+        textItalic.value = obj.fontStyle === 'italic';
+        hasSelectedText.value = true;
+        activeTab.value = 'teks';
+    } else {
+        hasSelectedText.value = false;
+    }
+
+    if (obj && obj.type === 'image') {
+        imageScale.value = obj.scaleX;
+        imageRotation.value = Math.round(obj.angle);
+        activeTab.value = 'gambar';
+    }
+}
+
+function onTextsLoaded(texts: SvgText[]) {
+    // Kita tidak menggunakan elemen SVG text lagi,
+    // sekarang kita menggunakan text interaktif Fabric.js
 }
 
 // ═══════════════════════════════════════════
@@ -156,47 +183,42 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const imageScale = ref(1.0);
 const imageRotation = ref(0);
 
-/** Buka dialog pilih file */
 function triggerUpload() {
     fileInputRef.value?.click();
 }
 
-/** Handle file yang dipilih */
 function handleFileUpload(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file && editorRef.value) {
         editorRef.value.addImage(file);
-        // Reset slider ke default
         imageScale.value = 1.0;
         imageRotation.value = 0;
     }
     if (target) target.value = '';
 }
 
-/** Terapkan perubahan skala ke gambar aktif */
 function handleImageScale() {
-    editorRef.value?.setActiveImageScale(imageScale.value);
+    editorRef.value?.setActiveScale(imageScale.value);
 }
 
-/** Terapkan perubahan rotasi ke gambar aktif */
 function handleImageRotation() {
-    editorRef.value?.setActiveImageRotation(imageRotation.value);
+    editorRef.value?.setActiveRotation(imageRotation.value);
 }
 
 // ═══════════════════════════════════════════
 // AKSI UMUM
 // ═══════════════════════════════════════════
 
-/** Canvas Fabric.js untuk texture 3D */
 const designCanvas = ref<HTMLCanvasElement | null>(null);
+const isSaving = ref(false);
 
 function onCanvasUpdate(canvas: HTMLCanvasElement) {
     designCanvas.value = canvas;
 }
 
-function onRendererReady(renderer: THREE.WebGLRenderer) {
-    threeRenderer.value = renderer;
+function onRendererReady(r: THREE.WebGLRenderer) {
+    threeRenderer.value = r;
 }
 
 /** Hapus objek terpilih di canvas */
@@ -206,7 +228,7 @@ function deleteSelected() {
 
 /** Reset semua desain */
 function clearDesign() {
-    editorRef.value?.clearCanvas();
+    editorRef.value?.resetDesign();
 }
 
 /** Download screenshot model 3D sebagai PNG */
@@ -223,6 +245,35 @@ function downloadScreenshot() {
     }, 'image/png');
 }
 
+/** Simpan desain ke database */
+async function saveDesign() {
+    if (!editorRef.value || isSaving.value) return;
+    isSaving.value = true;
+
+    try {
+        const designJson = editorRef.value.getDesignJson();
+        const texts = editorRef.value.getTexts();
+
+        // Kirim data ke backend via Inertia
+        router.post(`/katalog/produk/${props.produk?.id}/kustomisasi/simpan`, {
+            desain_json: JSON.stringify(designJson),
+            teks: texts.map((t) => ({ teks: t.text })),
+            // gambar di-handle terpisah via file upload
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isSaving.value = false;
+            },
+            onError: () => {
+                isSaving.value = false;
+            },
+        });
+    } catch (err) {
+        console.error('[KustomisasiProduk] Gagal menyimpan desain:', err);
+        isSaving.value = false;
+    }
+}
+
 /** Kembali ke halaman detail produk */
 function goBack() {
     if (props.produk?.id) {
@@ -233,456 +284,568 @@ function goBack() {
 }
 
 const productName = computed(() => props.produk?.nama ?? 'Kustomisasi Produk');
+
+/** Path model — gunakan OBJ jika tersedia, fallback ke GLB */
+const modelPath = computed(() => '/models/tshirt1.obj');
+const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
 </script>
 
 <template>
 
     <Head :title="`Kustomisasi - ${productName}`" />
 
-    <div class="customizer-page">
-        <!-- ═══ KIRI: Model 3D ═══ -->
-        <div class="customizer-left">
-            <!-- Logo -->
-            <div class="customizer-logo">
-                <Link href="/" aria-label="Beranda">
-                    <img src="/images/logo/logo-dark.png" alt="Kisanak Distro" class="logo-img" />
-                </Link>
-            </div>
-
-            <!-- Penampil 3D -->
-            <div class="viewer-container">
-                <TshirtViewer ref="viewerRef" :color="selectedColor" :design-canvas="designCanvas"
-                    model-path="/models/tshirt2.glb" @renderer-ready="onRendererReady" />
-            </div>
-
-            <!-- Toolbar bawah kiri -->
-            <div class="toolbar-bottom">
-                <Button variant="primary" @click="clearDesign">
-                    <PhArrowCounterClockwise :size="16" />
-                </Button>
-            </div>
-        </div>
-
-        <!-- ═══ KANAN: Panel Kontrol ═══ -->
-        <div class="customizer-right">
-            <!-- Header: Tombol Go Back & Download -->
-            <div class="panel-header">
-                <Button variant="primary" @click="goBack">
-                    <PhArrowLeft :size="16" />
-                </Button>
-                <Button variant="primary" @click="downloadScreenshot">
-                    <PhCamera :size="16" />
-                </Button>
-            </div>
-
-            <!-- Tab Navigation -->
-            <div class="tab-nav">
-                <button v-for="tab in tabs" :key="tab.id" :id="`tab-${tab.id}`" class="tab-btn"
-                    :class="{ 'tab-btn--active': activeTab === tab.id }" @click="activeTab = tab.id">
-                    {{ tab.label }}
+    <div class="studio">
+        <!-- ═══ SIDEBAR KIRI: Panel Kontrol ═══ -->
+        <aside class="studio__sidebar">
+            <!-- Header -->
+            <div class="studio__sidebar-header">
+                <button class="studio__icon-btn" @click="goBack" title="Kembali">
+                    <PhArrowLeft :size="18" weight="bold" />
                 </button>
-            </div>
-
-            <!-- ─── Tab Content: WARNA ─── -->
-            <div v-show="activeTab === 'warna'" class="tab-content">
-                <div class="section-label">Pilih Warna Kaos</div>
-                <div class="color-list">
-                    <button v-for="(c, i) in colorPalette" :key="c.id" :id="`color-${c.id}`" class="color-item"
-                        :class="{ 'color-item--active': selectedColorIndex === i }" @click="selectColor(i)">
-                        <span class="color-dot" :style="{ backgroundColor: c.hex }"></span>
-                        <span class="color-info">
-                            <span class="color-name">{{ c.name }}</span>
-                            <span v-if="c.cmyk" class="color-cmyk">({{ c.cmyk }})</span>
-                        </span>
+                <h2 class="studio__title">{{ productName }}</h2>
+                <div class="studio__header-actions">
+                    <button class="studio__icon-btn" @click="downloadScreenshot" title="Screenshot">
+                        <PhCamera :size="18" />
+                    </button>
+                    <button class="studio__icon-btn" @click="saveDesign" :disabled="isSaving" title="Simpan Desain">
+                        <PhFloppyDisk :size="18" weight="bold" />
                     </button>
                 </div>
             </div>
 
-            <!-- ─── Tab Content: TEKS ─── -->
-            <div v-show="activeTab === 'teks'" class="tab-content">
-                <div class="section-label">Tambah / Edit Teks</div>
+            <!-- Tab Navigation -->
+            <div class="studio__tabs">
+                <button v-for="tab in tabs" :key="tab.id" class="studio__tab"
+                    :class="{ 'studio__tab--active': activeTab === tab.id }" @click="activeTab = tab.id">
+                    <component :is="tab.icon" :size="18" />
+                    <span>{{ tab.label }}</span>
+                </button>
+            </div>
 
-                <!-- Input Teks -->
-                <div class="form-group">
-                    <label class="form-label">Isi Teks</label>
-                    <input id="text-input" v-model="textInput" type="text" class="form-input"
-                        placeholder="Ketik teks di sini..." />
-                </div>
+            <!-- Tab Content -->
+            <div class="studio__tab-content">
 
-                <!-- Font Family -->
-                <div class="form-group">
-                    <label class="form-label">Font</label>
-                    <select id="text-font" v-model="textFontFamily" class="form-select">
-                        <option v-for="f in fontFamilies" :key="f" :value="f">{{ f }}</option>
-                    </select>
-                </div>
+                <!-- ─── WARNA ─── -->
+                <div v-show="activeTab === 'warna'" class="studio__panel">
+                    <div class="studio__panel-title">Pilih Warna Kaos</div>
+                    <p class="studio__panel-desc">Warna akan diterapkan ke seluruh zona pattern</p>
 
-                <!-- Font Size -->
-                <div class="form-group">
-                    <label class="form-label">Ukuran Font</label>
-                    <select id="text-size" v-model.number="textFontSize" class="form-select">
-                        <option v-for="s in fontSizes" :key="s" :value="s">{{ s }}px</option>
-                    </select>
-                </div>
+                    <div class="color-grid">
+                        <button v-for="(c, i) in colorPalette" :key="c.id" class="color-swatch"
+                            :class="{ 'color-swatch--active': selectedColorIndex === i }" :title="c.name"
+                            @click="selectColor(i)">
+                            <span class="color-swatch__dot" :style="{ backgroundColor: c.hex }"></span>
+                            <span class="color-swatch__label">{{ c.name }}</span>
+                        </button>
+                    </div>
 
-                <!-- Font Style: Bold, Italic -->
-                <div class="form-group">
-                    <label class="form-label">Gaya Font</label>
-                    <div class="btn-row">
-                        <Button id="text-bold" variant="option" :active="textFontWeight === 'bold'"
-                            @click="textFontWeight = textFontWeight === 'bold' ? 'normal' : 'bold'">
-                            <strong>B</strong>
-                        </Button>
-                        <Button id="text-italic" variant="option" :active="textFontStyle === 'italic'"
-                            @click="textFontStyle = textFontStyle === 'italic' ? 'normal' : 'italic'">
-                            <em>I</em>
-                        </Button>
+                    <div v-if="colorPalette.length === 0" class="studio__empty">
+                        Tidak ada data warna tersedia.
                     </div>
                 </div>
 
-                <!-- Alignment -->
-                <div class="form-group">
-                    <label class="form-label">Perataan</label>
-                    <div class="btn-row">
-                        <Button id="text-align-left" variant="option" :active="textAlign === 'left'"
-                            @click="textAlign = 'left'">
-                            Kiri
-                        </Button>
-                        <Button id="text-align-center" variant="option" :active="textAlign === 'center'"
-                            @click="textAlign = 'center'">
-                            Tengah
-                        </Button>
-                        <Button id="text-align-right" variant="option" :active="textAlign === 'right'"
-                            @click="textAlign = 'right'">
-                            Kanan
-                        </Button>
+                <!-- ─── TEKS ─── -->
+                <div v-show="activeTab === 'teks'" class="studio__panel">
+                    <div class="studio__panel-title">Teks & Tipografi</div>
+                    <p class="studio__panel-desc">Pilih teks di canvas untuk mengedit, atau tambah teks baru.</p>
+
+                    <!-- Tombol Tambah Teks Baru (selalu visible) -->
+                    <div class="form-group">
+                        <button class="upload-btn" @click="addNewText">
+                            <PhTextT :size="20" />
+                            <span>Tambah Teks Baru</span>
+                        </button>
+                    </div>
+
+                    <div v-if="hasSelectedText" class="text-editor">
+                        <div class="studio__panel-subtitle">Edit Teks Terpilih</div>
+                        <!-- Isi Teks -->
+                        <div class="form-group">
+                            <label class="form-label">Isi Teks</label>
+                            <input id="text-input" v-model="textInput" type="text" class="form-input"
+                                placeholder="Ketik teks..." @input="handleUpdateText" />
+                        </div>
+
+                        <!-- Bold & Italic -->
+                        <div class="form-group">
+                            <label class="form-label">Gaya Teks</label>
+                            <div class="style-toggles">
+                                <button class="style-toggle-btn" :class="{ active: textBold }" title="Bold"
+                                    @click="handleToggleBold">
+                                    <PhTextBolder :size="18" />
+                                </button>
+                                <button class="style-toggle-btn" :class="{ active: textItalic }" title="Italic"
+                                    @click="handleToggleItalic">
+                                    <PhTextItalic :size="18" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Font Family -->
+                        <div class="form-group">
+                            <label class="form-label">Font</label>
+                            <select id="text-font" v-model="textFontFamily" class="form-select"
+                                @change="handleUpdateText">
+                                <option v-for="f in fontFamilies" :key="f" :value="f">{{ f }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Font Size -->
+                        <div class="form-group">
+                            <label class="form-label">Ukuran</label>
+                            <select id="text-size" v-model="textFontSize" class="form-select"
+                                @change="handleUpdateText">
+                                <option v-for="s in fontSizes" :key="s" :value="s">{{ s }}px</option>
+                            </select>
+                        </div>
+
+                        <!-- Warna Teks -->
+                        <div class="form-group">
+                            <label class="form-label">Warna Teks</label>
+                            <input id="text-color" v-model="textColor" type="color" class="form-color"
+                                @input="handleUpdateText" />
+                        </div>
+
+                        <div class="form-group mt-2">
+                            <button class="delete-btn" @click="deleteSelected">
+                                <PhTrash :size="16" />
+                                Hapus Teks
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-else class="studio__empty">
+                        <div>Klik teks di canvas untuk mengedit.</div>
                     </div>
                 </div>
 
-                <!-- Warna Teks -->
-                <div class="form-group">
-                    <label class="form-label">Warna Teks</label>
-                    <input id="text-color" v-model="textColor" type="color" class="form-color" />
-                </div>
+                <!-- ─── GAMBAR ─── -->
+                <div v-show="activeTab === 'gambar'" class="studio__panel">
+                    <div class="studio__panel-title">Tambah Gambar</div>
 
-                <!-- Tombol Aksi Teks -->
-                <div class="form-group btn-row">
-                    <Button variant="solid" @click="handleAddText">
-                        Tambah Teks Baru
-                    </Button>
-                    <Button variant="primary" @click="handleUpdateText">
-                        Perbarui Terpilih
-                    </Button>
+                    <!-- Upload -->
+                    <div class="form-group">
+                        <button class="upload-btn" @click="triggerUpload">
+                            <PhUploadSimple :size="20" />
+                            <span>Pilih File Gambar</span>
+                        </button>
+                        <input ref="fileInputRef" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                            class="hidden-input" @change="handleFileUpload" />
+                    </div>
+
+                    <!-- Resize -->
+                    <div class="form-group">
+                        <label class="form-label">Ukuran Gambar</label>
+                        <div class="slider-row">
+                            <input id="image-scale" v-model.number="imageScale" type="range" min="0.1" max="3"
+                                step="0.05" class="form-range" @input="handleImageScale" />
+                            <span class="slider-val">{{ (imageScale * 100).toFixed(0) }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Rotate -->
+                    <div class="form-group">
+                        <label class="form-label">Rotasi Gambar</label>
+                        <div class="slider-row">
+                            <input id="image-rotation" v-model.number="imageRotation" type="range" min="0" max="360"
+                                step="1" class="form-range" @input="handleImageRotation" />
+                            <span class="slider-val">{{ imageRotation }}°</span>
+                        </div>
+                    </div>
+
+                    <!-- Delete -->
+                    <div class="form-group">
+                        <button class="delete-btn" @click="deleteSelected">
+                            <PhTrash :size="16" />
+                            Hapus Terpilih
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- ─── Tab Content: GAMBAR ─── -->
-            <div v-show="activeTab === 'gambar'" class="tab-content">
-                <div class="section-label">Tambah / Edit Gambar</div>
-
-                <!-- Upload -->
-                <div class="form-group">
-                    <label class="form-label">Pilih Gambar</label>
-                    <Button variant="primary" @click="triggerUpload">
-                        Pilih File
-                    </Button>
-                    <input ref="fileInputRef" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                        class="hidden-input" @change="handleFileUpload" />
-                </div>
-
-                <!-- Resize -->
-                <div class="form-group">
-                    <label class="form-label">Ukuran Gambar</label>
-                    <div class="slider-row">
-                        <input id="image-scale" v-model.number="imageScale" type="range" min="0.1" max="3" step="0.05"
-                            class="form-range" @input="handleImageScale" />
-                        <span class="slider-val">{{ (imageScale * 100).toFixed(0) }}%</span>
-                    </div>
-                </div>
-
-                <!-- Rotate -->
-                <div class="form-group">
-                    <label class="form-label">Rotasi Gambar</label>
-                    <div class="slider-row">
-                        <input id="image-rotation" v-model.number="imageRotation" type="range" min="0" max="360"
-                            step="1" class="form-range" @input="handleImageRotation" />
-                        <span class="slider-val">{{ imageRotation }}°</span>
-                    </div>
-                </div>
-
-                <!-- Hapus Gambar Terpilih -->
-                <div class="form-group">
-                    <Button variant="primary" @click="deleteSelected">
-                        Hapus Terpilih
-                    </Button>
-                </div>
+            <!-- Bottom Toolbar -->
+            <div class="studio__sidebar-footer">
+                <button class="studio__reset-btn" @click="clearDesign">
+                    <PhArrowCounterClockwise :size="16" />
+                    Reset Desain
+                </button>
             </div>
-        </div>
+        </aside>
 
-        <!-- DesignEditor tersembunyi (canvas Fabric.js) -->
-        <DesignEditor ref="editorRef" @canvas-update="onCanvasUpdate" />
+        <!-- ═══ TENGAH: Canvas Editor 2D ═══ -->
+        <main class="studio__canvas">
+            <div class="studio__canvas-header">
+                <h3 class="studio__canvas-title">Canvas Editor</h3>
+            </div>
+            <div class="studio__canvas-body">
+                <DesignEditor ref="editorRef" :pattern-path="patternPath" :selected-color="selectedColor"
+                    @canvas-update="onCanvasUpdate" @texts-loaded="onTextsLoaded" @selection="handleSelection" />
+            </div>
+        </main>
+
+        <!-- ═══ KANAN: 3D Preview ═══ -->
+        <section class="studio__preview">
+            <div class="studio__preview-header">
+                <h3 class="studio__preview-title">3D Preview</h3>
+            </div>
+            <div class="studio__preview-body">
+                <TshirtViewer ref="viewerRef" :design-canvas="designCanvas" :model-path="modelPath"
+                    @renderer-ready="onRendererReady" />
+            </div>
+        </section>
     </div>
 </template>
 
 <style scoped>
-/* ─── Layout Utama ─── */
-.customizer-page {
+/* ═══════════════════════════════════════════
+   STUDIO LAYOUT — 3 Column
+   ═══════════════════════════════════════════ */
+
+.studio {
     display: flex;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    font-family: 'Neue Montreal', 'Inter', sans-serif;
-    background-color: #f5f0e8;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #0f0f1a;
+    color: #e2e8f0;
 }
 
-/* ─── Sisi Kiri: Model 3D ─── */
-.customizer-left {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.customizer-logo {
-    position: absolute;
-    top: 24px;
-    left: 28px;
-    z-index: 10;
-}
-
-.logo-img {
-    height: 36px;
-    width: auto;
-    filter: brightness(0);
-}
-
-.viewer-container {
-    width: 100%;
-    height: 100%;
-}
-
-.toolbar-bottom {
-    position: absolute;
-    bottom: 28px;
-    left: 28px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-}
-
-.tool-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(31, 27, 30, 0.06);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(31, 27, 30, 0.1);
-    border-radius: 8px;
-    color: #1f1b1e;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.tool-btn:hover {
-    background: rgba(31, 27, 30, 0.14);
-    transform: translateY(-1px);
-}
-
-/* ─── Sisi Kanan: Panel Kontrol ─── */
-.customizer-right {
-    width: 380px;
-    min-width: 380px;
-    background: #ffffff;
-    border-left: 1px solid #e8e4df;
+/* ─── Sidebar Kiri ─── */
+.studio__sidebar {
+    width: 280px;
+    min-width: 280px;
     display: flex;
     flex-direction: column;
+    background: #16162a;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     overflow: hidden;
 }
 
-/* ─── Header Panel ─── */
-.panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e8e4df;
-}
-
-.customizer-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background-color: #e8a94e;
-    color: #1f1b1e;
-    border: none;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-transform: uppercase;
-}
-
-.customizer-btn:hover {
-    background-color: #d4962e;
-}
-
-/* ─── Tab Navigation ─── */
-.tab-nav {
-    display: flex;
-    border-bottom: 1px solid #e8e4df;
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 12px 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.tab-btn:hover {
-    color: #1f1b1e;
-}
-
-.tab-btn--active {
-    color: #1f1b1e;
-    border-bottom-color: #1f1b1e;
-}
-
-/* ─── Tab Content ─── */
-.tab-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 20px;
-}
-
-.section-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1f1b1e;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 14px;
-}
-
-/* ─── Color List (Tab Warna) ─── */
-.color-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.color-item {
+.studio__sidebar-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 10px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: transparent;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.studio__header-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.studio__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition: all 0.15s ease;
+}
+
+.studio__icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.studio__icon-btn--accent {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #818cf8;
+}
+
+.studio__icon-btn--accent:hover {
+    background: rgba(99, 102, 241, 0.25);
+    color: #a5b4fc;
+}
+
+.studio__icon-btn--sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+/* ─── Tabs ─── */
+.studio__tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.studio__tab:hover {
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.studio__tab--active {
+    color: #818cf8;
+    border-bottom-color: #818cf8;
+    background: rgba(99, 102, 241, 0.05);
+}
+
+/* ─── Tab Content ─── */
+.studio__tab-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.studio__panel {
+    padding: 16px;
+}
+
+.studio__panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.studio__panel-desc {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 16px;
+    margin-top: 0;
+}
+
+.studio__empty {
+    font-size: 12px;
+    color: #475569;
+    text-align: center;
+    padding: 24px 16px;
+}
+
+/* ─── Color Grid ─── */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.color-swatch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.color-swatch:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.color-swatch--active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: #818cf8;
+}
+
+.color-swatch__dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.color-swatch__label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── Text List ─── */
+.text-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.text-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: all 0.15s ease;
     text-align: left;
 }
 
-.color-item:hover {
-    background: #f5f0e8;
+.text-item:hover {
+    background: rgba(255, 255, 255, 0.06);
 }
 
-.color-item--active {
-    background: #f5f0e8;
-    border-color: #1f1b1e;
+.text-item--active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: #818cf8;
 }
 
-.color-dot {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 2px solid rgba(0, 0, 0, 0.1);
+.text-item__name {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.color-info {
+.text-item__preview {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e2e8f0;
+}
+
+.text-editor {
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    gap: 12px;
 }
 
-.color-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1f1b1e;
-    line-height: 1.2;
-}
-
-.color-cmyk {
-    font-size: 11px;
-    color: #888;
-    line-height: 1.2;
-}
-
-/* ─── Form Controls (Tab Teks & Gambar) ─── */
+/* ─── Form Controls ─── */
 .form-group {
-    margin-bottom: 14px;
+    margin-bottom: 0;
 }
 
 .form-label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: #555;
+    color: #64748b;
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
 }
 
 .form-input,
 .form-select {
     width: 100%;
-    padding: 8px 10px;
+    padding: 8px 12px;
     font-size: 13px;
-    border: 1px solid #d4d0cb;
-    border-radius: 4px;
-    background: #fff;
-    color: #1f1b1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
     outline: none;
     transition: border-color 0.15s ease;
 }
 
 .form-input:focus,
 .form-select:focus {
-    border-color: #1f1b1e;
+    border-color: #818cf8;
+}
+
+.form-select {
+    cursor: pointer;
+}
+
+.form-select option {
+    background: #1e1e3a;
+    color: #e2e8f0;
 }
 
 .form-color {
     width: 48px;
-    height: 32px;
-    padding: 0;
-    border: 1px solid #d4d0cb;
-    border-radius: 4px;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
     cursor: pointer;
-    background: none;
+    background: rgba(255, 255, 255, 0.04);
 }
 
-.btn-row {
+/* ─── Upload Button ─── */
+.upload-btn {
     display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 8px;
-    flex-wrap: wrap;
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
 
+.upload-btn:hover {
+    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.05);
+    color: #a5b4fc;
+}
+
+/* ─── Delete Button ─── */
+.delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ─── Slider ─── */
 .slider-row {
     display: flex;
     align-items: center;
@@ -691,15 +854,110 @@ const productName = computed(() => props.produk?.nama ?? 'Kustomisasi Produk');
 
 .form-range {
     flex: 1;
-    accent-color: #1f1b1e;
+    accent-color: #818cf8;
+    height: 4px;
 }
 
 .slider-val {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: #555;
-    min-width: 48px;
+    color: #64748b;
+    min-width: 42px;
     text-align: right;
+}
+
+/* ─── Sidebar Footer ─── */
+.studio__sidebar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__reset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.studio__reset-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #f1f5f9;
+}
+
+/* ─── Canvas Editor (Tengah) ─── */
+.studio__canvas {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__canvas-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.studio__canvas-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+.studio__canvas-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.studio__canvas-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ─── 3D Preview (Kanan) ─── */
+.studio__preview {
+    width: 420px;
+    min-width: 420px;
+    display: flex;
+    flex-direction: column;
+}
+
+.studio__preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.studio__preview-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+.studio__preview-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ─── Utility ─── */
@@ -709,5 +967,65 @@ const productName = computed(() => props.produk?.nama ?? 'Kustomisasi Produk');
     pointer-events: none;
     width: 0;
     height: 0;
+}
+
+/* ─── Scrollbar ─── */
+.studio__tab-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.studio__tab-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.studio__tab-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.studio__tab-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Bold/Italic Toggle ─── */
+.studio__panel-subtitle {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.style-toggles {
+    display: flex;
+    gap: 6px;
+}
+
+.style-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.style-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+
+.style-toggle-btn.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+    color: #a5b4fc;
 }
 </style>
