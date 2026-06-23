@@ -149,10 +149,17 @@ export function updateAllZoneColors(
         });
     } else {
         // Fallback: Jika tidak ada ZONE(...), warnai semua elemen path
-        const paths = svgDoc.querySelectorAll('path');
-        paths.forEach(p => {
-            p.setAttribute('fill', color);
-            (p as SVGElement).style.fill = color;
+        // Menggunakan getElementsByTagNameNS atau iterasi all elements untuk menghindari isu namespace di XMLDocument
+        const allElements = svgDoc.querySelectorAll('*');
+        allElements.forEach(el => {
+            if (el.localName === 'path') {
+                el.setAttribute('fill', color);
+                // Hapus atribut style fill jika ada agar setAttribute fill bisa berlaku
+                const style = el.getAttribute('style');
+                if (style) {
+                    el.setAttribute('style', style.replace(/fill\s*:\s*[^;]+;?/gi, ''));
+                }
+            }
         });
     }
 }

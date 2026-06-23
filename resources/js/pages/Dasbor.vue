@@ -153,7 +153,7 @@ watch(() => props.chartData, () => {
         <!-- Main Content -->
         <main class="flex-1 p-8">
             <!-- Info Cards -->
-            <div class="grid grid-cols-4 gap-4 mb-8">
+            <div class="grid grid-cols-3 gap-4 mb-8">
                 <InfoCard title="Konfirmasi Pembayaran" :count="konfirmasiPembayaranCount"
                     href="/produksi/konfirmasi-pembayaran">
                     <template #icon>

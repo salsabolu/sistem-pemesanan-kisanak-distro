@@ -229,6 +229,7 @@ function deleteSelected() {
 /** Reset semua desain */
 function clearDesign() {
     editorRef.value?.resetDesign();
+    selectedColorIndex.value = -1; // Reset warna aktif agar bisa diklik lagi
 }
 
 /** Download screenshot model 3D sebagai PNG */
