@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
                 'openLogin' => $request->session()->get('openLogin'),
                 'openRegister' => $request->session()->get('openRegister'),
+                'desainId' => $request->session()->get('desainId'),
             ],
             'auth' => [
                 'user' => $request->user(),

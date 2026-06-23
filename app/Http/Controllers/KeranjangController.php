@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Desain;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use App\Models\Produk;
@@ -19,7 +20,7 @@ class KeranjangController extends Controller
         $userId = Auth::id();
 
         // Get orders that are "Dalam Produksi" and have confirmed payment
-        $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran'])
+        $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran', 'detailPesanan.desain.teks', 'detailPesanan.desain.gambar'])
             ->where('status', 'Dalam Produksi')
             ->whereHas('pembayaran', function ($q) {
                 $q->where('status', 'Terkonfirmasi');
@@ -48,6 +49,7 @@ class KeranjangController extends Controller
             'items.*.size' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unitPrice' => 'required|numeric|min:0',
+            'items.*.desainId' => 'nullable|integer|exists:desain,id',
         ]);
 
         $userId = Auth::id();
@@ -84,6 +86,19 @@ class KeranjangController extends Controller
                 'jumlah' => $jumlah,
                 'subtotal' => $subtotal,
             ]);
+
+            // Hubungkan desain ke detail_pesanan jika ada
+            if (!empty($item['desainId'])) {
+                $detailPesanan = $pesanan->detailPesanan()
+                    ->where('id_produk', $produk->id)
+                    ->latest('id')
+                    ->first();
+                if ($detailPesanan) {
+                    Desain::where('id', $item['desainId'])->update([
+                        'id_detail_pesanan' => $detailPesanan->id,
+                    ]);
+                }
+            }
         }
 
         // Create pembayaran record with status 'Belum Konfirmasi' (uploaded but not yet verified)

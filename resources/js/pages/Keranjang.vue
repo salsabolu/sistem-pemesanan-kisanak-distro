@@ -21,6 +21,7 @@ type CartItem = {
     unitPrice: number;
     unitPriceText: string;
     quantity: number;
+    desainId?: number | null;
 };
 
 type PesananAktifItem = {
@@ -146,6 +147,7 @@ function submitOrder() {
         formData.append(`items[${index}][size]`, it.size);
         formData.append(`items[${index}][quantity]`, String(it.quantity));
         formData.append(`items[${index}][unitPrice]`, String(it.unitPrice));
+        if (it.desainId) formData.append(`items[${index}][desainId]`, String(it.desainId));
     });
 
     // Bersihkan keranjang SEBELUM request dikirim.

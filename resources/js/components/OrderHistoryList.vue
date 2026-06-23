@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import NavIcon from '@/components/NavIcon.vue';
 import ProductCard from '@/components/ProductCard.vue';
+import DesignPreviewModal from '@/components/DesignPreviewModal.vue';
+import Button from '@/components/Button.vue';
 import { PhInfo } from '@phosphor-icons/vue';
 
 const props = defineProps<{
@@ -59,6 +61,7 @@ const ordersGrouped = computed(() => {
                 imageSrc: pr?.gambar && pr.gambar !== '-' ? pr.gambar : '/images/kaos-1.png',
                 imageAlt: pr?.nama ?? '-',
                 productName: pr?.nama ?? '-',
+                produkId: pr?.id ?? 0,
                 color: pr?.warna?.nama ?? '-',
                 size: pr?.ukuran?.nama ?? '-',
                 quantity: qty,
@@ -74,6 +77,7 @@ const ordersGrouped = computed(() => {
             status: p.status,
             deadlineText: formatDate(p.tenggat_waktu ?? null),
             estimatedFinish: formatDateTime(p.estimasi_selesai ?? null),
+            detailPesanan: p.detail_pesanan ?? [],
         });
     }
     return Object.keys(groups).map(date => ({
@@ -81,6 +85,29 @@ const ordersGrouped = computed(() => {
         items: groups[date],
     }));
 });
+
+// ── Design Preview ──
+const isDesignPreviewOpen = ref(false);
+const previewDesainJson = ref<string | null>(null);
+const previewProductName = ref('');
+const previewTeksList = ref<Array<{ id: number; teks: string }>>([]);
+const previewGambarList = ref<Array<{ id: number; file: string }>>([]);
+
+function openDesignPreview(produkId: number, productName: string, detailPesananList: any[]) {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produkId);
+    if (detail?.desain?.desain_json) {
+        previewDesainJson.value = detail.desain.desain_json;
+        previewProductName.value = productName;
+        previewTeksList.value = detail.desain.teks ?? [];
+        previewGambarList.value = detail.desain.gambar ?? [];
+        isDesignPreviewOpen.value = true;
+    }
+}
+
+function hasDesain(produkId: number, detailPesananList: any[]): boolean {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produkId);
+    return !!(detail?.desain?.desain_json);
+}
 </script>
 
 <template>
@@ -97,7 +124,14 @@ const ordersGrouped = computed(() => {
                             <ProductCard v-for="prod in item.products" :key="prod.key" :imageSrc="prod.imageSrc"
                                 :imageAlt="prod.imageAlt" :productName="prod.productName" :color="prod.color"
                                 :size="prod.size" :price="prod.price" :quantity="prod.quantity"
-                                :subtotal="prod.subtotal" :showQuantity="true" :showSubtotal="true" imageSize="lg" />
+                                :subtotal="prod.subtotal" :showQuantity="true" :showSubtotal="true" imageSize="lg">
+                                <Button v-if="hasDesain(prod.produkId, item.detailPesanan)"
+                                    variant="solid"
+                                    class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+                                    @click="openDesignPreview(prod.produkId, prod.productName, item.detailPesanan)">
+                                    Lihat Hasil Kustom Desain
+                                </Button>
+                            </ProductCard>
                         </div>
 
                         <!-- Total & tenggat -->
@@ -137,4 +171,8 @@ const ordersGrouped = computed(() => {
             </div>
         </div>
     </div>
+
+    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
+        :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
+        @close="isDesignPreviewOpen = false" />
 </template>

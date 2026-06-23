@@ -15,8 +15,8 @@
   - Rotasi & zoom model 3D
 -->
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import {
     PhArrowLeft,
     PhCamera,
@@ -26,13 +26,16 @@ import {
     PhImage,
     PhFloppyDisk,
     PhTrash,
-    PhUploadSimple,
     PhTextBolder,
     PhTextItalic,
+    PhShoppingCart,
+    PhArrowsLeftRight,
+    PhUploadSimple,
 } from '@phosphor-icons/vue';
 import TshirtViewer from '@/components/customizer/TshirtViewer.vue';
 import DesignEditor from '@/components/customizer/DesignEditor.vue';
 import Button from '@/components/Button.vue';
+import Alert from '@/components/Alert.vue';
 import { cmykToHex } from '@/lib/colorUtils';
 import type { SvgZone, SvgText } from '@/lib/svgPatternUtils';
 import type * as THREE from 'three';
@@ -46,6 +49,20 @@ type WarnaOption = {
     kode: string; // Format CMYK: "C,M,Y,K"
 };
 
+/** Opsi ukuran dari tabel ukuran */
+type UkuranOption = {
+    id: number;
+    nama: string;
+};
+
+/** Varian produk */
+type ProdukVariant = {
+    id: number;
+    harga: number | string;
+    warna?: { id: number; nama: string } | null;
+    ukuran?: { id: number; nama: string } | null;
+};
+
 /** Data produk yang sedang dikustomisasi */
 type ProdukData = {
     id: number;
@@ -55,9 +72,15 @@ type ProdukData = {
     deskripsi: string | null;
 };
 
+const page = usePage<any>();
+
 const props = defineProps<{
     produk?: ProdukData;
     warnaOptions?: WarnaOption[];
+    ukuranOptions?: UkuranOption[];
+    selectedWarna?: string;
+    selectedUkuran?: string;
+    variants?: ProdukVariant[];
 }>();
 
 // ─── Referensi Komponen ───
@@ -68,6 +91,61 @@ const threeRenderer = ref<THREE.WebGLRenderer | null>(null);
 // ─── Tab Aktif ───
 type TabId = 'warna' | 'teks' | 'gambar';
 const activeTab = ref<TabId>('warna');
+
+const showAlert = ref(false);
+const alertMessage = ref('');
+const alertType = ref<'success' | 'error' | 'warning' | 'info'>('info');
+
+// ─── Variant Selection ───
+const currentWarna = ref(props.selectedWarna || '');
+const currentUkuran = ref(props.selectedUkuran || '');
+
+const availableWarnas = computed(() => {
+    if (!props.variants) return [];
+    const warnas = new Set(props.variants.map(v => v.warna?.nama).filter(Boolean));
+    return Array.from(warnas);
+});
+
+const availableUkurans = computed(() => {
+    if (!props.variants) return [];
+    const ukurans = new Set(props.variants
+        .filter(v => v.warna?.nama === currentWarna.value)
+        .map(v => v.ukuran?.nama)
+        .filter(Boolean));
+    if (ukurans.size === 0) {
+        return Array.from(new Set(props.variants.map(v => v.ukuran?.nama).filter(Boolean)));
+    }
+    return Array.from(ukurans);
+});
+
+watch(currentWarna, (newWarna, oldWarna) => {
+    if (newWarna) {
+        const idx = colorPalette.value.findIndex(c => c.name === newWarna);
+        if (idx !== -1 && idx !== selectedColorIndex.value) {
+            selectedColorIndex.value = idx;
+        }
+
+        if (oldWarna && newWarna !== oldWarna) {
+            alertMessage.value = `Warna kaos diubah menjadi ${newWarna}.`;
+            alertType.value = 'info';
+            showAlert.value = true;
+        }
+
+        const validVariants = props.variants?.filter(v => v.warna?.nama === newWarna) || [];
+        const validUkurans = validVariants.map(v => v.ukuran?.nama).filter(Boolean);
+        if (!validUkurans.includes(currentUkuran.value) && validUkurans.length > 0) {
+            currentUkuran.value = validUkurans[0] as string;
+        }
+    }
+});
+
+watch(currentUkuran, (newUkuran, oldUkuran) => {
+    if (newUkuran && oldUkuran && newUkuran !== oldUkuran) {
+        alertMessage.value = `Ukuran kaos diubah menjadi ${newUkuran}.`;
+        alertType.value = 'info';
+        showAlert.value = true;
+    }
+});
 
 const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'warna', label: 'Warna', icon: PhPalette },
@@ -81,18 +159,25 @@ const tabs: { id: TabId; label: string; icon: any }[] = [
 
 /** Palet warna dari tabel warna */
 const colorPalette = computed(() => {
-    if (props.warnaOptions && props.warnaOptions.length > 0) {
-        return props.warnaOptions.map((w) => ({
+    if (!props.warnaOptions) return [];
+    return props.warnaOptions.map((w) => {
+        return {
             id: w.id,
             name: w.nama,
-            cmyk: w.kode,
             hex: cmykToHex(w.kode),
-        }));
-    }
-    return [];
+        };
+    });
 });
 
 const selectedColorIndex = ref(-1);
+
+watch(colorPalette, (newPalette) => {
+    if (newPalette.length > 0 && selectedColorIndex.value === -1 && currentWarna.value) {
+        const initialIdx = newPalette.findIndex(c => c.name.trim().toLowerCase() === currentWarna.value.trim().toLowerCase());
+        if (initialIdx !== -1) selectedColorIndex.value = initialIdx;
+    }
+}, { immediate: true });
+
 const selectedColor = computed(() => {
     if (selectedColorIndex.value < 0) return undefined;
     return colorPalette.value[selectedColorIndex.value]?.hex;
@@ -100,6 +185,10 @@ const selectedColor = computed(() => {
 
 function selectColor(index: number) {
     selectedColorIndex.value = index;
+    const colorName = colorPalette.value[index]?.name;
+    if (colorName && currentWarna.value !== colorName) {
+        currentWarna.value = colorName;
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -113,6 +202,8 @@ const textFontSize = ref('80');
 const textColor = ref('#FFFFFF');
 const textBold = ref(false);
 const textItalic = ref(false);
+const textRotation = ref(0);
+const textFlipX = ref(false);
 
 /** Daftar font yang tersedia */
 const fontFamilies = [
@@ -145,6 +236,15 @@ function handleToggleItalic() {
     editorRef.value?.setActiveItalic(textItalic.value);
 }
 
+function handleTextRotation() {
+    editorRef.value?.setActiveRotation(textRotation.value);
+}
+
+function handleToggleTextFlip() {
+    textFlipX.value = !textFlipX.value;
+    editorRef.value?.setActiveFlipX(textFlipX.value);
+}
+
 function addNewText() {
     editorRef.value?.addText('Teks Baru');
 }
@@ -157,6 +257,8 @@ function handleSelection(obj: any) {
         textColor.value = obj.fill;
         textBold.value = obj.fontWeight === 'bold';
         textItalic.value = obj.fontStyle === 'italic';
+        textRotation.value = Math.round(obj.angle || 0);
+        textFlipX.value = !!obj.flipX;
         hasSelectedText.value = true;
         activeTab.value = 'teks';
     } else {
@@ -165,7 +267,8 @@ function handleSelection(obj: any) {
 
     if (obj && obj.type === 'image') {
         imageScale.value = obj.scaleX;
-        imageRotation.value = Math.round(obj.angle);
+        imageRotation.value = Math.round(obj.angle || 0);
+        imageFlipX.value = !!obj.flipX;
         activeTab.value = 'gambar';
     }
 }
@@ -182,6 +285,8 @@ function onTextsLoaded(texts: SvgText[]) {
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const imageScale = ref(1.0);
 const imageRotation = ref(0);
+const imageFlipX = ref(false);
+const uploadedFiles = ref<File[]>([]);
 
 function triggerUpload() {
     fileInputRef.value?.click();
@@ -191,7 +296,10 @@ function handleFileUpload(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file && editorRef.value) {
-        editorRef.value.addImage(file);
+        const fileId = Math.random().toString(36).substring(2, 10);
+        (file as any).kisanakId = fileId;
+        editorRef.value.addImage(file, fileId);
+        uploadedFiles.value.push(file);
         imageScale.value = 1.0;
         imageRotation.value = 0;
     }
@@ -206,6 +314,11 @@ function handleImageRotation() {
     editorRef.value?.setActiveRotation(imageRotation.value);
 }
 
+function handleToggleImageFlip() {
+    imageFlipX.value = !imageFlipX.value;
+    editorRef.value?.setActiveFlipX(imageFlipX.value);
+}
+
 // ═══════════════════════════════════════════
 // AKSI UMUM
 // ═══════════════════════════════════════════
@@ -215,6 +328,7 @@ const isSaving = ref(false);
 
 function onCanvasUpdate(canvas: HTMLCanvasElement) {
     designCanvas.value = canvas;
+    viewerRef.value?.updateTexture();
 }
 
 function onRendererReady(r: THREE.WebGLRenderer) {
@@ -252,15 +366,24 @@ async function saveDesign() {
     isSaving.value = true;
 
     try {
-        const designJson = editorRef.value.getDesignJson();
+        const designJson = editorRef.value.getDesignJson() as any;
         const texts = editorRef.value.getTexts();
+
+        // Cari semua ID gambar yang masih ada di canvas
+        const activeImageIds = designJson.fabricObjects?.objects
+            ?.filter((o: any) => o.type === 'image' && o.kisanakId)
+            ?.map((o: any) => o.kisanakId) || [];
+
+        // Saring file yang diupload, HANYA ambil file yang belum dihapus dari canvas
+        const finalFiles = uploadedFiles.value.filter(f => activeImageIds.includes((f as any).kisanakId));
 
         // Kirim data ke backend via Inertia
         router.post(`/katalog/produk/${props.produk?.id}/kustomisasi/simpan`, {
             desain_json: JSON.stringify(designJson),
             teks: texts.map((t) => ({ teks: t.text })),
-            // gambar di-handle terpisah via file upload
+            gambar_files: Array.from(finalFiles),
         }, {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
                 isSaving.value = false;
@@ -289,11 +412,117 @@ const productName = computed(() => props.produk?.nama ?? 'Kustomisasi Produk');
 /** Path model — gunakan OBJ jika tersedia, fallback ke GLB */
 const modelPath = computed(() => '/models/tshirt1.obj');
 const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
+
+// ═══════════════════════════════════════════
+// CHECKOUT — Simpan desain lalu ke keranjang
+// ═══════════════════════════════════════════
+
+const isCheckingOut = ref(false);
+const savedDesainId = ref<number | null>(null);
+
+// Watch for desainId flash dari simpanDesain
+watch(
+    () => page.props.flash?.desainId,
+    (id) => {
+        if (id) savedDesainId.value = id;
+    },
+    { immediate: true }
+);
+
+function formatRupiah(value: number) {
+    const rounded = Math.max(0, Math.round(value));
+    const parts = String(rounded).split('');
+    const out: string[] = [];
+    for (let i = 0; i < parts.length; i += 1) {
+        const idxFromEnd = parts.length - i;
+        out.push(parts[i]);
+        if (idxFromEnd > 1 && idxFromEnd % 3 === 1) out.push('.');
+    }
+    return `Rp${out.join('')}`;
+}
+
+/** Cari variant yang cocok berdasarkan warna & ukuran yang dipilih */
+const matchedVariant = computed(() => {
+    if (!props.variants || props.variants.length === 0) return undefined;
+    return props.variants.find(
+        (v) => (v.warna?.nama ?? '') === currentWarna.value &&
+               (v.ukuran?.nama ?? '') === currentUkuran.value
+    ) ?? props.variants[0];
+});
+
+const unitPrice = computed(() => {
+    const raw = matchedVariant.value?.harga ?? props.produk?.harga;
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    return Number.isFinite(n) ? n : 0;
+});
+
+/** Checkout: simpan desain → tambah ke cart → redirect ke keranjang */
+async function handleCheckout() {
+    if (!editorRef.value || isCheckingOut.value) return;
+    isCheckingOut.value = true;
+
+    try {
+        // Jika desain belum disimpan, simpan dulu
+        if (!savedDesainId.value) {
+            const designJson = editorRef.value.getDesignJson();
+            const texts = editorRef.value.getTexts();
+
+            router.post(`/katalog/produk/${props.produk?.id}/kustomisasi/simpan`, {
+                desain_json: JSON.stringify(designJson),
+                teks: texts.map((t) => ({ teks: t.text })),
+                gambar_files: uploadedFiles.value,
+            }, {
+                preserveScroll: true,
+                onSuccess: (page: any) => {
+                    const desainId = page.props.flash?.desainId;
+                    if (desainId) {
+                        savedDesainId.value = desainId;
+                    }
+                    addToCartAndRedirect();
+                },
+                onError: () => {
+                    isCheckingOut.value = false;
+                },
+            });
+        } else {
+            addToCartAndRedirect();
+        }
+    } catch (err) {
+        console.error('[KustomisasiProduk] Checkout gagal:', err);
+        isCheckingOut.value = false;
+    }
+}
+
+function addToCartAndRedirect() {
+    const variantId = matchedVariant.value?.id ?? props.produk?.id ?? 0;
+    const price = unitPrice.value;
+    const cartItem = {
+        id: `${variantId}_${currentWarna.value}_${currentUkuran.value}_custom_${Date.now()}`,
+        productId: variantId,
+        imageSrc: props.produk?.gambar ?? '/images/kaos-1.png',
+        productName: productName.value,
+        color: currentWarna.value,
+        size: currentUkuran.value,
+        unitPrice: price,
+        unitPriceText: formatRupiah(price),
+        quantity: 1,
+        desainId: savedDesainId.value,
+    };
+
+    const raw = localStorage.getItem('kisanak_cart');
+    const cart = raw ? JSON.parse(raw) : [];
+    cart.push(cartItem);
+    localStorage.setItem('kisanak_cart', JSON.stringify(cart));
+
+    router.visit('/keranjang');
+}
 </script>
 
 <template>
 
     <Head :title="`Kustomisasi - ${productName}`" />
+
+    <Alert v-model:show="showAlert" :message="alertMessage" :type="alertType" />
 
     <div class="studio">
         <!-- ═══ SIDEBAR KIRI: Panel Kontrol ═══ -->
@@ -311,6 +540,26 @@ const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
                     <button class="studio__icon-btn" @click="saveDesign" :disabled="isSaving" title="Simpan Desain">
                         <PhFloppyDisk :size="18" weight="bold" />
                     </button>
+                </div>
+            </div>
+
+            <!-- Variant Info -->
+            <div class="studio__variant-info">
+                <div class="studio__variant-item" style="padding-top: 6px; padding-bottom: 6px;">
+                    <span class="studio__variant-label">Warna</span>
+                    <select v-model="currentWarna" class="studio__variant-select">
+                        <option v-for="w in availableWarnas" :key="w" :value="w">{{ w }}</option>
+                    </select>
+                </div>
+                <div class="studio__variant-item" style="padding-top: 6px; padding-bottom: 6px;">
+                    <span class="studio__variant-label">Ukuran</span>
+                    <select v-model="currentUkuran" class="studio__variant-select">
+                        <option v-for="u in availableUkurans" :key="u" :value="u">{{ u }}</option>
+                    </select>
+                </div>
+                <div class="studio__variant-item">
+                    <span class="studio__variant-label">Harga</span>
+                    <span class="studio__variant-value">{{ formatRupiah(unitPrice) }}</span>
                 </div>
             </div>
 
@@ -379,6 +628,20 @@ const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
                                     @click="handleToggleItalic">
                                     <PhTextItalic :size="18" />
                                 </button>
+                                <button class="style-toggle-btn" :class="{ active: textFlipX }" title="Mirror (Flip Horizontal)"
+                                    @click="handleToggleTextFlip">
+                                    <PhArrowsLeftRight :size="18" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Text Rotation -->
+                        <div class="form-group">
+                            <label class="form-label">Rotasi Teks</label>
+                            <div class="slider-row">
+                                <input id="text-rotation" v-model.number="textRotation" type="range" min="0" max="360"
+                                    step="1" class="form-range" @input="handleTextRotation" />
+                                <span class="slider-val">{{ textRotation }}°</span>
                             </div>
                         </div>
 
@@ -466,6 +729,10 @@ const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
 
             <!-- Bottom Toolbar -->
             <div class="studio__sidebar-footer">
+                <button class="studio__checkout-btn" @click="handleCheckout" :disabled="isCheckingOut">
+                    <PhShoppingCart :size="16" weight="bold" />
+                    {{ isCheckingOut ? 'Memproses...' : 'Checkout' }}
+                </button>
                 <button class="studio__reset-btn" @click="clearDesign">
                     <PhArrowCounterClockwise :size="16" />
                     Reset Desain
@@ -867,10 +1134,97 @@ const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
     text-align: right;
 }
 
+/* ─── Variant Info ─── */
+.studio__variant-info {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__variant-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 8px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio__variant-item:last-child {
+    border-right: none;
+}
+
+.studio__variant-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.studio__variant-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.studio__variant-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+}
+
+.studio__variant-select option {
+    background: #1a1a2e;
+    color: #e2e8f0;
+}
+
 /* ─── Sidebar Footer ─── */
 .studio__sidebar-footer {
     padding: 12px 16px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.studio__checkout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.studio__checkout-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.studio__checkout-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .studio__reset-btn {

@@ -121,9 +121,12 @@ export function parseSvgTexts(svgDoc: XMLDocument): SvgText[] {
  * @param color - Warna baru (HEX string, contoh: "#FF0000")
  */
 export function updateSvgZoneColor(svgDoc: XMLDocument, zoneId: string, color: string): void {
-    const el = svgDoc.getElementById(zoneId);
+    const el = svgDoc.getElementById(zoneId) || svgDoc.querySelector(`[id="${zoneId}"]`);
     if (el) {
         el.setAttribute('fill', color);
+        if ((el as HTMLElement).style) {
+            (el as HTMLElement).style.fill = color;
+        }
     }
 }
 

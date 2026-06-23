@@ -99,7 +99,7 @@ class ProdukController extends Controller
         ]);
     }
 
-    public function kustomisasi(Produk $produk)
+    public function kustomisasi(Request $request, Produk $produk)
     {
         if (!Auth::check()) {
             return redirect()->route('katalog')->with('openLogin', true);
@@ -114,7 +114,7 @@ class ProdukController extends Controller
         // Dapatkan semua varian produk dengan nama yang sama
         $variants = Produk::where('nama', '=', $produk->nama)
             ->where('is_active', true)
-            ->with(['warna'])
+            ->with(['warna', 'ukuran'])
             ->get();
 
         // Ambil warna unik dari varian-varian tersebut untuk palet kustomisasi
@@ -124,9 +124,23 @@ class ProdukController extends Controller
             'kode' => $w->kode, // Format CMYK: "C,M,Y,K"
         ]);
 
+        // Ambil ukuran unik dari varian-varian
+        $ukuranOptions = $variants->pluck('ukuran')->filter()->unique('id')->values()->map(fn($u) => [
+            'id'   => $u->id,
+            'nama' => $u->nama,
+        ]);
+
+        // Warna & ukuran yang sudah dipilih di halaman detail (read-only display)
+        $selectedWarna = $request->query('warna', '');
+        $selectedUkuran = $request->query('ukuran', '');
+
         return Inertia::render('produk/KustomisasiProduk', [
-            'produk'       => $produk,
-            'warnaOptions' => $warnaOptions,
+            'produk'         => $produk,
+            'warnaOptions'   => $warnaOptions,
+            'ukuranOptions'  => $ukuranOptions,
+            'selectedWarna'  => $selectedWarna,
+            'selectedUkuran' => $selectedUkuran,
+            'variants'       => $variants,
         ]);
     }
 
@@ -171,7 +185,7 @@ class ProdukController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Desain berhasil disimpan.');
+        return redirect()->back()->with('success', 'Desain berhasil disimpan.')->with('desainId', $desain->id);
     }
 
     public function store(Request $request)

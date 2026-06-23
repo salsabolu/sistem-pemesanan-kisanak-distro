@@ -147,6 +147,13 @@ async function initEditor() {
         zones.value = parseSvgZones(doc);
         texts.value = parseSvgTexts(doc);
 
+        if (props.selectedColor) {
+            updateAllZoneColors(doc, props.selectedColor);
+            zones.value.forEach((z) => {
+                z.fill = props.selectedColor!;
+            });
+        }
+
         emit('zones-loaded', zones.value);
         emit('texts-loaded', texts.value);
 
@@ -155,6 +162,7 @@ async function initEditor() {
 
         // 4. Inisialisasi Fabric.js untuk overlay gambar
         initFabric();
+        updateStackSize(); // FIX: Update CSS size after fabric canvas is created
 
         // 5. Compose final texture
         composeTexture();
@@ -286,33 +294,40 @@ async function setSvgText(
 }
 
 /**
- * Tambahkan gambar ke Fabric canvas overlay.
+ * Tambahkan gambar ke overlay (Fabric.js)
  */
-async function addImage(file: File) {
+async function addImage(file: File, fileId?: string) {
     if (!fabricCanvas.value) return;
 
-    const url = URL.createObjectURL(file);
-    try {
-        const img = await FabricImage.fromURL(url);
-        const maxDim = Math.min(canvasWidth.value, canvasHeight.value) * 0.25;
-        const scale = Math.min(maxDim / (img.width || 1), maxDim / (img.height || 1));
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const dataUrl = e.target?.result as string;
+        if (!dataUrl) return;
 
-        objectOffset = (objectOffset + 100) % 600;
+        try {
+            const img = await FabricImage.fromURL(dataUrl);
+            const maxDim = Math.min(canvasWidth.value, canvasHeight.value) * 0.25;
+            const scale = Math.min(maxDim / (img.width || 1), maxDim / (img.height || 1));
 
-        img.set({
-            scaleX: scale,
-            scaleY: scale,
-            left: (canvasWidth.value / 2) + objectOffset - 300,
-            top: (canvasHeight.value / 2) + objectOffset - 300,
-            originX: 'center',
-            originY: 'center',
-        });
-        fabricCanvas.value.add(img);
-        fabricCanvas.value.setActiveObject(img);
-        fabricCanvas.value.renderAll();
-    } catch (err) {
-        console.error('[DesignEditor] Gagal memuat gambar:', err);
-    }
+            objectOffset = (objectOffset + 100) % 600;
+
+            img.set({
+                scaleX: scale,
+                scaleY: scale,
+                left: (canvasWidth.value / 2) + objectOffset - 300,
+                top: (canvasHeight.value / 2) + objectOffset - 300,
+                originX: 'center',
+                originY: 'center',
+                kisanakId: fileId,
+            });
+            fabricCanvas.value?.add(img);
+            fabricCanvas.value?.setActiveObject(img);
+            fabricCanvas.value?.renderAll();
+        } catch (err) {
+            console.error('[DesignEditor] Gagal memuat gambar:', err);
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 /**
@@ -399,6 +414,19 @@ function setActiveRotation(angle: number) {
 }
 
 /**
+ * Atur cermin horizontal (Flip X) untuk gambar/teks aktif.
+ */
+function setActiveFlipX(flip: boolean) {
+    if (!fabricCanvas.value) return;
+    const active = fabricCanvas.value.getActiveObject();
+    if (active) {
+        active.set({ flipX: flip });
+        fabricCanvas.value.renderAll();
+    }
+}
+
+
+/**
  * Hapus objek terpilih di Fabric canvas.
  */
 function deleteSelected() {
@@ -426,8 +454,6 @@ function clearImages() {
  */
 async function resetDesign() {
     clearImages();
-    // Reload SVG dari awal
-    await initEditor();
 }
 
 /**
@@ -484,6 +510,7 @@ defineExpose({
     addImage,
     setActiveScale,
     setActiveRotation,
+    setActiveFlipX,
     deleteSelected,
     clearImages,
     resetDesign,

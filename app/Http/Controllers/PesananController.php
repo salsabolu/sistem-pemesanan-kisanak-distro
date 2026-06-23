@@ -12,7 +12,7 @@ class PesananController extends Controller
 {
     public function index()
     {
-        $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
+        $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran', 'detailPesanan.desain.teks', 'detailPesanan.desain.gambar'])
             ->whereHas('pembayaran', function ($q) {
                 $q->where('status', 'Terkonfirmasi');
             })
@@ -34,7 +34,7 @@ class PesananController extends Controller
             })
             ->update(['status' => 'Dalam Produksi']);
 
-        $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran'])
+        $pesanan = Pesanan::with(['pembeli', 'produk.warna', 'produk.ukuran', 'pembayaran', 'detailPesanan.desain.teks', 'detailPesanan.desain.gambar'])
             ->where('status', '=', 'Dalam Produksi')
             ->orderBy('tenggat_waktu', 'asc') // EDD: Earliest Due Date
             ->orderBy('created_at', 'asc') // FCFS: First Come First Served

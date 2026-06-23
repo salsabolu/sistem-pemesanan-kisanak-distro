@@ -2,6 +2,8 @@
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
+import DesignPreviewModal from '@/components/DesignPreviewModal.vue';
+import Button from '@/components/Button.vue';
 
 type PesananDB = {
     id: number;
@@ -16,6 +18,11 @@ type PesananDB = {
         id: number; nama: string;
         warna?: { nama: string }; ukuran?: { nama: string };
         pivot?: { jumlah: number; subtotal: number };
+    }>;
+    detail_pesanan?: Array<{
+        id: number;
+        id_produk: number;
+        desain?: { id: number; desain_json: string | null } | null;
     }>;
 };
 
@@ -68,9 +75,33 @@ const items = computed(() => {
             estimasiSelesai: formatDateTime(p.estimasi_selesai ?? null),
             status: p.status as 'Dalam Produksi' | 'Selesai' | 'Dibatalkan' | null,
             produk: p.produk ?? [],
+            detailPesanan: p.detail_pesanan ?? [],
         };
     });
 });
+
+// ── Design Preview ──
+const isDesignPreviewOpen = ref(false);
+const previewDesainJson = ref<string | null>(null);
+const previewProductName = ref('');
+const previewTeksList = ref<Array<{ id: number; teks: string }>>([]);
+const previewGambarList = ref<Array<{ id: number; file: string }>>([]);
+
+function openDesignPreview(produk: any, detailPesananList: any[]) {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produk.id);
+    if (detail?.desain?.desain_json) {
+        previewDesainJson.value = detail.desain.desain_json;
+        previewProductName.value = produk.nama ?? '';
+        previewTeksList.value = detail.desain.teks ?? [];
+        previewGambarList.value = detail.desain.gambar ?? [];
+        isDesignPreviewOpen.value = true;
+    }
+}
+
+function hasDesain(produk: any, detailPesananList: any[]): boolean {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produk.id);
+    return !!(detail?.desain?.desain_json);
+}
 
 function formatRupiah(value: number): string {
     return `Rp${new Intl.NumberFormat('id-ID').format(Math.max(0, Math.round(value)))}`;
@@ -256,6 +287,12 @@ function paginationPages(): (number | string)[] {
                                 {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
                             </div>
                             <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
+                            <Button v-if="hasDesain(prod, selectedItem?.detailPesanan ?? [])"
+                                variant="solid"
+                                class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+                                @click.stop="openDesignPreview(prod, selectedItem?.detailPesanan ?? [])">
+                                Lihat Hasil Kustom Desain
+                            </Button>
                         </div>
                         <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
                             Tidak ada produk.
@@ -268,6 +305,10 @@ function paginationPages(): (number | string)[] {
                     </div>
                 </div>
             </div>
+
+            <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
+                :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
+                @close="isDesignPreviewOpen = false" />
         </main>
     </div>
 </template>

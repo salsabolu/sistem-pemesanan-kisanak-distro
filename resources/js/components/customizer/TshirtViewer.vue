@@ -361,12 +361,6 @@ function initScene() {
     function animate() {
         animationId.value = requestAnimationFrame(animate);
         ctrl.update();
-
-        // Update texture desain setiap frame
-        if (designTexture.value) {
-            designTexture.value.needsUpdate = true;
-        }
-
         r.render(s, cam);
     }
     animate();
@@ -407,6 +401,9 @@ onBeforeUnmount(() => {
 
 defineExpose({
     getRenderer: () => renderer.value,
+    updateTexture: () => {
+        if (designTexture.value) designTexture.value.needsUpdate = true;
+    }
 });
 </script>
 

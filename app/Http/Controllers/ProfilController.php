@@ -17,7 +17,7 @@ class ProfilController extends Controller
             return redirect()->route('home');
         }
 
-        $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran'])
+        $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran', 'detailPesanan.desain.teks', 'detailPesanan.desain.gambar'])
             ->where('id_pembeli', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);

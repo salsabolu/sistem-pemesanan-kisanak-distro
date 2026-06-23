@@ -296,7 +296,7 @@ const subtotalText = computed(() => {
                     </div>
 
                     <div class="flex flex-row gap-2 mt-5">
-                        <Link v-if="props.produk?.is_customizable" :href="`/katalog/produk/${props.produk?.id}/kustomisasi`" class="block w-full">
+                        <Link v-if="props.produk?.is_customizable" :href="`/katalog/produk/${props.produk?.id}/kustomisasi?warna=${encodeURIComponent(selectedColor)}&ukuran=${encodeURIComponent(selectedSize)}`" class="block w-full">
                             <Button class="w-full" variant="primary">
                                 Kustomisasi Desain
                             </Button>
