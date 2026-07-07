@@ -20,7 +20,7 @@ class ProfilController extends Controller
         $pesanan = Pesanan::with(['produk.warna', 'produk.ukuran', 'pembayaran', 'detailPesanan.desain.teks', 'detailPesanan.desain.gambar'])
             ->where('id_pembeli', $user->id)
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(5);
 
         return Inertia::render('profil/RiwayatPesanan', [
             'pesanan' => $pesanan,

@@ -6,8 +6,10 @@ import {
     updateAllZoneColors,
     renderSvgToCanvas,
 } from '@/lib/svgPatternUtils';
-import { PhX, PhDownloadSimple, PhCopy } from '@phosphor-icons/vue';
+import { PhX, PhDownloadSimple, PhCopy, PhSun, PhMoon, PhMagnifyingGlassMinus, PhMagnifyingGlassPlus, PhArrowsOut } from '@phosphor-icons/vue';
 import Alert from './Alert.vue';
+import Button from './Button.vue';
+import TshirtViewer from './customizer/TshirtViewer.vue';
 
 const props = defineProps<{
     open: boolean;
@@ -37,6 +39,35 @@ const alertType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
 const displayTeksList = computed(() => {
     return (props.teksList && props.teksList.length > 0) ? props.teksList : internalTeksList.value;
+});
+
+const isDarkMode = ref(document.documentElement.classList.contains('dark'));
+function toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    if (isDarkMode.value) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
+
+const viewMode = ref<'2d' | '3d'>('2d');
+const zoomScale = ref(1);
+
+function zoomIn() {
+    zoomScale.value = Math.min(zoomScale.value + 0.1, 3);
+}
+
+function zoomOut() {
+    zoomScale.value = Math.max(zoomScale.value - 0.1, 0.5);
+}
+
+function resetZoom() {
+    zoomScale.value = 1;
+}
+
+watch(viewMode, (val) => {
+    if (val === '3d') resetZoom();
 });
 
 const displayGambarList = computed(() => {
@@ -291,79 +322,158 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div v-if="props.open" class="dpm-overlay" @click="emit('close')">
+    <div v-if="props.open" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        @click="emit('close')">
         <Alert v-model:show="alertShow" :message="alertMessage" :type="alertType" />
 
-        <div class="dpm-modal" @click.stop>
+        <div class="bg-white dark:bg-[#1a1a2e] w-[90vw] max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col shadow-[0_24px_48px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/10"
+            @click.stop>
             <!-- Header -->
-            <div class="dpm-header">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/10">
                 <div>
-                    <h3 class="dpm-title">Hasil Kustom Desain</h3>
-                    <p v-if="props.productName" class="dpm-subtitle">{{ props.productName }}</p>
+                    <h3 class="text-[15px] font-medium text-gray-900 dark:text-slate-100 m-0">Hasil Kustom Desain</h3>
+                    <p v-if="props.productName"
+                        class="text-xs text-gray-500 dark:text-slate-400 mt-0.5 uppercase tracking-wide">{{
+                            props.productName }}</p>
                 </div>
-                <div class="dpm-header-actions">
-                    <button class="dpm-icon-btn" @click="downloadDesign" title="Download PNG">
+                <div class="flex gap-1.5">
+                    <Button variant="icon" @click="toggleTheme" title="Ganti Tema">
+                        <PhSun v-if="isDarkMode" :size="18" />
+                        <PhMoon v-else :size="18" />
+                    </Button>
+                    <Button variant="icon" @click="downloadDesign" title="Download PNG">
                         <PhDownloadSimple :size="18" />
-                    </button>
-                    <button class="dpm-icon-btn" @click="emit('close')" title="Tutup">
+                    </Button>
+                    <Button variant="icon" @click="emit('close')" title="Tutup" class="text-red">
                         <PhX :size="18" />
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             <!-- Body -->
-            <div class="dpm-body">
+            <div class="flex flex-col sm:flex-row flex-1 min-h-0 overflow-y-auto sm:overflow-hidden">
                 <!-- Canvas Area -->
-                <div ref="containerRef" class="dpm-canvas-area">
+                <div ref="containerRef"
+                    class="flex-1 min-w-0 relative bg-white dark:bg-[#1e1e2f] overflow-hidden min-h-[300px] sm:min-h-[400px]">
+
+                    <!-- View Mode Toggle -->
+                    <div
+                        class="absolute top-4 left-4 z-20 flex bg-white dark:bg-gray-800 rounded shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <button @click="viewMode = '2d'" class="px-3 py-1.5 text-xs font-medium transition-colors"
+                            :class="viewMode === '2d' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">2D
+                            Flat</button>
+                        <button @click="viewMode = '3d'"
+                            class="px-3 py-1.5 text-xs font-medium transition-colors border-l border-gray-200 dark:border-gray-700"
+                            :class="viewMode === '3d' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">3D
+                            Model</button>
+                    </div>
+
                     <!-- Loading -->
-                    <div v-if="isLoading" class="dpm-loading">
-                        <div class="dpm-spinner"></div>
+                    <div v-if="isLoading"
+                        class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-400 text-sm z-10 bg-white/50 dark:bg-[#1e1e2f]/50">
+                        <div
+                            class="w-8 h-8 border-[3px] border-slate-400/20 border-t-indigo-400 rounded-full animate-spin">
+                        </div>
                         <span>Memuat desain...</span>
                     </div>
 
                     <!-- Error -->
-                    <div v-else-if="loadError" class="dpm-error">
+                    <div v-else-if="loadError"
+                        class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-red-400 text-sm z-10">
                         <span>⚠️ {{ loadError }}</span>
                     </div>
 
-                    <!-- Composite Preview -->
-                    <canvas ref="compositeCanvasRef" class="dpm-preview-canvas"></canvas>
+                    <div class="absolute inset-0 p-5 sm:p-8 pt-16 sm:pt-20 z-10">
+                        <!-- Zoom Controls -->
+                        <div v-if="viewMode === '2d'"
+                            class="absolute bottom-4 right-4 flex bg-white dark:bg-gray-800 rounded shadow border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+                            <button @click="zoomOut"
+                                class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                                title="Zoom Out">
+                                <PhMagnifyingGlassMinus :size="16" />
+                            </button>
+                            <button @click="resetZoom"
+                                class="px-2 text-[10px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-x border-gray-200 dark:border-gray-700 transition-colors"
+                                title="Reset Zoom">
+                                <div class="flex items-center gap-1">
+                                    <PhArrowsOut :size="14" />
+                                    {{ Math.round(zoomScale * 100) }}%
+                                </div>
+                            </button>
+                            <button @click="zoomIn"
+                                class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                                title="Zoom In">
+                                <PhMagnifyingGlassPlus :size="16" />
+                            </button>
+                        </div>
+
+                        <!-- Composite Preview -->
+                        <div
+                            :class="viewMode === '2d' ? 'w-full h-full overflow-auto custom-scrollbar rounded-lg' : 'absolute -left-[9999px] -top-[9999px] w-0 h-0 opacity-0 pointer-events-none'">
+                            <div class="flex items-center justify-center transition-all duration-200 min-w-full min-h-full"
+                                :style="{ width: `${100 * zoomScale}%`, height: `${100 * zoomScale}%` }">
+                                <canvas ref="compositeCanvasRef"
+                                    class="w-full h-full object-contain drop-shadow-xl"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 3D View -->
+                        <div v-if="viewMode === '3d'" class="w-full h-full">
+                            <TshirtViewer :modelPath="'/models/tshirt1.obj'" :designCanvas="compositeCanvasRef" />
+                        </div>
+                    </div>
 
                     <!-- Hidden canvases for rendering -->
-                    <canvas ref="svgCanvasRef" class="dpm-hidden-canvas"></canvas>
-                    <canvas ref="fabricCanvasRef" class="dpm-hidden-canvas"></canvas>
+                    <canvas ref="svgCanvasRef"
+                        class="absolute -left-[9999px] -top-[9999px] w-0 h-0 pointer-events-none opacity-0"></canvas>
+                    <canvas ref="fabricCanvasRef"
+                        class="absolute -left-[9999px] -top-[9999px] w-0 h-0 pointer-events-none opacity-0"></canvas>
                 </div>
 
                 <!-- Sidebar Lists -->
-                <div v-if="displayTeksList.length > 0 || displayGambarList.length > 0" class="dpm-sidebar">
-                    <div class="dpm-sidebar-content">
-                        <div v-if="displayTeksList.length > 0" class="dpm-section">
-                            <h4 class="dpm-section-title">Daftar Teks</h4>
-                            <div class="dpm-list">
-                                <div v-for="(t, i) in displayTeksList" :key="t.id" class="dpm-list-item">
-                                    <span class="dpm-item-index">{{ i + 1 }}</span>
-                                    <span class="dpm-item-text">{{ t.teks }}</span>
-                                    <button class="dpm-copy-btn" @click="copyText(t.teks)" title="Salin Teks">
+                <div v-if="displayTeksList.length > 0 || displayGambarList.length > 0"
+                    class="w-full sm:w-[260px] sm:min-w-[260px] relative z-20 bg-white dark:bg-black/20 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-white/10">
+                    <div class="relative sm:absolute inset-0 sm:overflow-y-auto">
+                        <div v-if="displayTeksList.length > 0" class="p-4 border-b border-gray-200 dark:border-white/5">
+                            <h4
+                                class="text-[11px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                                Daftar Teks</h4>
+                            <div class="flex flex-col gap-2">
+                                <div v-for="(t, i) in displayTeksList" :key="t.id"
+                                    class="flex items-center gap-3 bg-white dark:bg-white/5 p-2.5 rounded-lg border border-gray-200 dark:border-white/5">
+                                    <span
+                                        class="text-[10px] font-medium text-gray-500 dark:text-slate-500 bg-white-hover/50 dark:bg-white/5 w-5 h-5 flex items-center justify-center rounded shrink-0">{{
+                                            i + 1 }}</span>
+                                    <span
+                                        class="text-[13px] text-gray-900 dark:text-slate-200 font-medium break-words">{{
+                                            t.teks }}</span>
+                                    <Button variant="icon" class="ml-auto" @click="copyText(t.teks)" title="Salin Teks">
                                         <PhCopy :size="16" />
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
 
-                        <div v-if="displayGambarList.length > 0" class="dpm-section">
-                            <h4 class="dpm-section-title">Daftar Gambar</h4>
-                            <div class="dpm-list">
+                        <div v-if="displayGambarList.length > 0"
+                            class="p-4 border-b border-gray-200 dark:border-white/5">
+                            <h4
+                                class="text-[11px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                                Daftar Gambar</h4>
+                            <div class="flex flex-col gap-2">
                                 <div v-for="(g, i) in displayGambarList" :key="g.id"
-                                    class="dpm-list-item dpm-list-item--image">
-                                    <span class="dpm-item-index">{{ i + 1 }}</span>
-                                    <div class="dpm-item-image-wrapper">
-                                        <img :src="g.file" alt="Gambar Kustom" class="dpm-item-image" />
+                                    class="flex items-center gap-3 bg-white dark:bg-white/5 p-2 rounded-lg border border-gray-200 dark:border-white/5">
+                                    <span
+                                        class="text-[10px] font-medium text-gray-500 dark:text-slate-500 bg-white-hover/50 dark:bg-white/5 w-5 h-5 flex items-center justify-center rounded shrink-0">{{
+                                            i + 1 }}</span>
+                                    <div
+                                        class="w-12 h-12 rounded-md overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 shrink-0">
+                                        <img :src="g.file" alt="Gambar Kustom" class="w-full h-full object-cover" />
                                     </div>
-                                    <button class="dpm-icon-btn dpm-download-btn"
+                                    <Button variant="icon" class="ml-auto"
                                         @click.stop="forceDownload(g.file, 'gambar-kustom.png')"
                                         title="Unduh Gambar Asli">
                                         <PhDownloadSimple :size="16" />
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -373,290 +483,3 @@ onBeforeUnmount(() => {
         </div>
     </div>
 </template>
-
-<style scoped>
-.dpm-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-}
-
-.dpm-modal {
-    background: #1a1a2e;
-    border-radius: 16px;
-    width: 90vw;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.dpm-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.dpm-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #f1f5f9;
-    margin: 0;
-}
-
-.dpm-subtitle {
-    font-size: 12px;
-    color: #94a3b8;
-    margin: 2px 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-.dpm-header-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.dpm-icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.dpm-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.dpm-canvas-area {
-    flex: 1;
-    min-width: 0;
-    /* FIX: Allows flex container to shrink below intrinsic canvas width */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    min-height: 400px;
-    position: relative;
-    background: #1e1e2f;
-    /* Changed from #0f0f1a to help diagnose black screen */
-}
-
-.dpm-preview-canvas {
-    max-width: 100%;
-    max-height: 60vh;
-    object-fit: contain;
-    border-radius: 8px;
-}
-
-.dpm-hidden-canvas {
-    position: absolute;
-    left: -9999px;
-    top: -9999px;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-    opacity: 0;
-}
-
-.dpm-loading,
-.dpm-error {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #94a3b8;
-    font-size: 14px;
-    z-index: 5;
-}
-
-.dpm-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(148, 163, 184, 0.2);
-    border-top-color: #818cf8;
-    border-radius: 50%;
-    animation: dpm-spin 0.8s linear infinite;
-}
-
-@keyframes dpm-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.dpm-error {
-    color: #f87171;
-}
-
-/* ─── Body & Sidebar ─── */
-.dpm-body {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-@media (max-width: 640px) {
-    .dpm-body {
-        flex-direction: column;
-        overflow-y: auto;
-    }
-
-    .dpm-canvas-area {
-        min-height: 300px;
-    }
-
-    .dpm-sidebar {
-        border-left: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-}
-
-.dpm-sidebar {
-    width: 260px;
-    min-width: 260px;
-    position: relative;
-    z-index: 20;
-    background: rgba(0, 0, 0, 0.2);
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.dpm-sidebar-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-}
-
-.dpm-section {
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.dpm-section-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin: 0 0 12px 0;
-}
-
-.dpm-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.dpm-list-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dpm-list-item--image {
-    padding: 8px;
-}
-
-.dpm-item-index {
-    font-size: 10px;
-    font-weight: 700;
-    color: #64748b;
-    background: rgba(255, 255, 255, 0.05);
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-
-.dpm-item-text {
-    font-size: 13px;
-    color: #e2e8f0;
-    font-weight: 500;
-    word-break: break-word;
-}
-
-.dpm-item-image-wrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
-}
-
-.dpm-item-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.dpm-download-btn {
-    margin-left: auto;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: rgba(129, 140, 248, 0.1);
-    color: #818cf8;
-    transition: all 0.2s ease;
-    text-decoration: none;
-}
-
-.dpm-download-btn:hover,
-.dpm-copy-btn:hover {
-    background: #818cf8;
-    color: #ffffff;
-}
-
-.dpm-copy-btn {
-    margin-left: auto;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: rgba(129, 140, 248, 0.1);
-    color: #818cf8;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-}
-</style>

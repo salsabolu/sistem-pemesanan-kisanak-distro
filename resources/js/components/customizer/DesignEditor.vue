@@ -11,6 +11,7 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, shallowRef, watch, nextTick } from 'vue';
+import { PhMagnifyingGlassPlus, PhMagnifyingGlassMinus, PhArrowsOut } from '@phosphor-icons/vue';
 import { Canvas as FabricCanvas, FabricImage, IText } from 'fabric';
 import {
     loadSvgFromUrl,
@@ -61,21 +62,48 @@ let objectOffset = 0;
 /** Ukuran internal texture canvas (diextract dari SVG) */
 const canvasWidth = ref(2048);
 const canvasHeight = ref(2048);
+const zoomScale = ref(1);
 
 let lastContainerWidth = 0;
 let lastContainerHeight = 0;
 
+function zoomIn() {
+    if (zoomScale.value < 3) {
+        zoomScale.value = Math.min(3, zoomScale.value + 0.25);
+        updateStackSize();
+    }
+}
+
+function zoomOut() {
+    if (zoomScale.value > 0.5) {
+        zoomScale.value = Math.max(0.5, zoomScale.value - 0.25);
+        updateStackSize();
+    }
+}
+
+function resetZoom() {
+    zoomScale.value = 1;
+    updateStackSize();
+}
+
 function updateStackSize() {
     if (!stackRef.value || canvasHeight.value <= 0 || lastContainerWidth <= 0) return;
     const ratio = canvasWidth.value / canvasHeight.value;
-    let w = lastContainerWidth;
-    let h = lastContainerWidth / ratio;
-    if (h > lastContainerHeight) {
-        h = lastContainerHeight;
-        w = lastContainerHeight * ratio;
+    
+    // Default base fit (dikurangi padding 32px agar tidak mepet)
+    const availableW = Math.max(lastContainerWidth - 32, 100);
+    const availableH = Math.max(lastContainerHeight - 32, 100);
+
+    let baseW = availableW;
+    let baseH = availableW / ratio;
+    if (baseH > availableH) {
+        baseH = availableH;
+        baseW = availableH * ratio;
     }
-    const finalW = Math.floor(w);
-    const finalH = Math.floor(h);
+
+    const finalW = Math.floor(baseW * zoomScale.value);
+    const finalH = Math.floor(baseH * zoomScale.value);
+
     stackRef.value.style.width = `${finalW}px`;
     stackRef.value.style.height = `${finalH}px`;
 
@@ -198,6 +226,15 @@ function initFabric() {
     });
 
     fabricCanvas.value = fc;
+
+    // Tambahkan style inline untuk .canvas-container yang di-generate oleh Fabric
+    const wrapper = fc.wrapperEl;
+    if (wrapper) {
+        wrapper.style.setProperty('position', 'absolute', 'important');
+        wrapper.style.setProperty('top', '0', 'important');
+        wrapper.style.setProperty('left', '0', 'important');
+        wrapper.style.zIndex = '2';
+    }
 
     // Re-compose texture setiap kali Fabric di-render
     fc.on('after:render', () => composeTexture());
@@ -521,119 +558,48 @@ defineExpose({
 </script>
 
 <template>
-    <div ref="containerRef" class="design-editor">
-        <!-- Loading state -->
-        <div v-if="isLoading" class="design-editor__loading">
-            <div class="design-editor__spinner"></div>
-            <span>Memuat pattern...</span>
+    <div ref="containerRef" class="relative w-full h-full overflow-auto bg-transparent">
+        
+        <!-- Zoom Controls -->
+        <div class="absolute bottom-4 right-4 flex bg-white dark:bg-gray-800 rounded shadow border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+            <button @click="zoomOut" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors" title="Zoom Out">
+                <PhMagnifyingGlassMinus :size="16" />
+            </button>
+            <button @click="resetZoom" class="px-2 text-[10px] font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-x border-gray-200 dark:border-gray-700 transition-colors" title="Reset Zoom">
+                <div class="flex items-center gap-1">
+                    <PhArrowsOut :size="14" />
+                    {{ Math.round(zoomScale * 100) }}%
+                </div>
+            </button>
+            <button @click="zoomIn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors" title="Zoom In">
+                <PhMagnifyingGlassPlus :size="16" />
+            </button>
         </div>
 
-        <!-- Error state -->
-        <div v-else-if="loadError" class="design-editor__error">
-            <span>⚠️ {{ loadError }}</span>
-        </div>
+        <!-- Scrollable wrapper -->
+        <div class="min-w-full min-h-full flex items-center justify-center p-4">
+            <!-- Loading state -->
+            <div v-if="isLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-400 text-sm z-10">
+                <div class="w-8 h-8 border-[3px] border-slate-400/20 border-t-slate-400 rounded-full animate-spin"></div>
+                <span>Memuat pattern...</span>
+            </div>
 
-        <!-- Canvas layers (stacked via CSS) -->
-        <div ref="stackRef" class="design-editor__canvas-stack">
-            <!-- Layer 1: SVG pattern render (visible preview) -->
-            <canvas ref="svgCanvasRef" class="design-editor__layer design-editor__layer--svg"></canvas>
+            <!-- Error state -->
+            <div v-else-if="loadError" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-red-400 text-sm z-10">
+                <span>⚠️ {{ loadError }}</span>
+            </div>
 
-            <!-- Layer 2: Fabric.js overlay (gambar user) — interactive -->
-            <canvas ref="fabricCanvasRef" class="design-editor__layer--fabric"></canvas>
+            <!-- Canvas layers (stacked via CSS) -->
+            <div ref="stackRef" class="relative mx-auto transition-all duration-200 ease-out" :style="{ opacity: isLoading ? 0 : 1 }">
+                <!-- Layer 1: SVG pattern render (visible preview) -->
+                <canvas ref="svgCanvasRef" class="absolute top-0 left-0 z-[1] pointer-events-none"></canvas>
+
+                <!-- Layer 2: Fabric.js overlay (gambar user) — interactive -->
+                <canvas ref="fabricCanvasRef"></canvas>
+            </div>
         </div>
 
         <!-- Composite canvas (offscreen, untuk texture 3D) -->
-        <canvas ref="compositeCanvasRef" class="design-editor__composite"></canvas>
+        <canvas ref="compositeCanvasRef" class="absolute -left-[9999px] -top-[9999px] w-0 h-0 pointer-events-none opacity-0"></canvas>
     </div>
 </template>
-
-<style scoped>
-.design-editor {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #1a1a2e;
-}
-
-.design-editor__loading,
-.design-editor__error {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #94a3b8;
-    font-size: 14px;
-    z-index: 5;
-}
-
-.design-editor__spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(148, 163, 184, 0.2);
-    border-top-color: #94a3b8;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.design-editor__error {
-    color: #f87171;
-}
-
-.design-editor__canvas-stack {
-    position: relative;
-    /* Lebar/tinggi dikontrol oleh ResizeObserver + updateStackSize() */
-    margin: 0 auto;
-}
-
-/* Layer SVG — hanya visual, tidak interaktif */
-.design-editor__layer--svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    /* Ukuran CSS dikontrol oleh updateStackSize() via JS */
-    z-index: 1;
-    pointer-events: none;
-}
-
-/*
- * Layer Fabric — JANGAN override width/height di sini!
- * Fabric.js mengontrol ukurannya sendiri via setDimensions().
- * Jika kita paksa dengan CSS !important, koordinat mouse akan rusak.
- */
-.design-editor__layer--fabric {
-    /* Kelas ini ada di elemen canvas asli sebelum di-wrap Fabric */
-}
-
-/* Fabric.js wraps canvas in .canvas-container div */
-.design-editor__canvas-stack :deep(.canvas-container) {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 2;
-    /* width & height dikelola oleh Fabric.setDimensions({ cssOnly: true }) */
-}
-
-/* Composite canvas — offscreen, hanya untuk texture 3D */
-.design-editor__composite {
-    position: absolute;
-    left: -9999px;
-    top: -9999px;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-    opacity: 0;
-}
-</style>

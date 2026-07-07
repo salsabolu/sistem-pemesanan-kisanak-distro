@@ -45,7 +45,6 @@ const animationId = ref<number>(0);
 const modelObject = shallowRef<THREE.Object3D | null>(null);
 
 // ─── Warna & Background ───
-const BG_COLOR = 0x1a1a2e;
 
 /**
  * Membuat placeholder kaos sederhana jika model tidak tersedia.
@@ -297,7 +296,7 @@ function initScene() {
     });
     r.setSize(width, height);
     r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    r.setClearColor(BG_COLOR, 1);
+    r.setClearColor(0x000000, 0); // Transparent background
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.2;
     container.appendChild(r.domElement);
@@ -305,7 +304,6 @@ function initScene() {
 
     // --- Scene ---
     const s = new THREE.Scene();
-    s.background = new THREE.Color(BG_COLOR);
     scene.value = s;
 
     // --- Kamera ---
@@ -422,7 +420,7 @@ defineExpose({
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #1a1a2e;
+    background: transparent;
 }
 
 .tshirt-viewer :deep(canvas) {

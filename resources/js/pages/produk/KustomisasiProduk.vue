@@ -19,6 +19,8 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import {
     PhArrowLeft,
+    PhSun,
+    PhMoon,
     PhCamera,
     PhArrowCounterClockwise,
     PhPalette,
@@ -446,7 +448,7 @@ const matchedVariant = computed(() => {
     if (!props.variants || props.variants.length === 0) return undefined;
     return props.variants.find(
         (v) => (v.warna?.nama ?? '') === currentWarna.value &&
-               (v.ukuran?.nama ?? '') === currentUkuran.value
+            (v.ukuran?.nama ?? '') === currentUkuran.value
     ) ?? props.variants[0];
 });
 
@@ -516,6 +518,12 @@ function addToCartAndRedirect() {
 
     router.visit('/keranjang');
 }
+
+const isDarkMode = ref(false);
+watch(isDarkMode, (val) => {
+    if (val) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+});
 </script>
 
 <template>
@@ -524,863 +532,287 @@ function addToCartAndRedirect() {
 
     <Alert v-model:show="showAlert" :message="alertMessage" :type="alertType" />
 
-    <div class="studio">
+    <div
+        class="flex w-screen h-screen overflow-hidden font-sans bg-white text-black dark:bg-[#16162a] dark:text-gray-200 transition-colors duration-300">
         <!-- ═══ SIDEBAR KIRI: Panel Kontrol ═══ -->
-        <aside class="studio__sidebar">
+        <aside
+            class="w-[280px] min-w-[280px] flex flex-col bg-white border-r border-gray-200 dark:bg-[#16162a] dark:border-gray-800 transition-colors duration-300">
             <!-- Header -->
-            <div class="studio__sidebar-header">
-                <button class="studio__icon-btn" @click="goBack" title="Kembali">
-                    <PhArrowLeft :size="18" weight="bold" />
-                </button>
-                <h2 class="studio__title">{{ productName }}</h2>
-                <div class="studio__header-actions">
-                    <button class="studio__icon-btn" @click="downloadScreenshot" title="Screenshot">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                <Button variant="icon" @click="goBack" title="Kembali">
+                    <PhArrowLeft :size="18" />
+                </Button>
+                <h2 class="flex-1 text-sm font-medium truncate text-gray-900 dark:text-white m-0">{{ productName }}</h2>
+                <div class="flex gap-1">
+                    <Button variant="icon" @click="isDarkMode = !isDarkMode" title="Ganti Tema">
+                        <PhSun v-if="isDarkMode" :size="18" />
+                        <PhMoon v-else :size="18" />
+                    </Button>
+                    <Button variant="icon" @click="downloadScreenshot" title="Screenshot">
                         <PhCamera :size="18" />
-                    </button>
-                    <button class="studio__icon-btn" @click="saveDesign" :disabled="isSaving" title="Simpan Desain">
-                        <PhFloppyDisk :size="18" weight="bold" />
-                    </button>
+                    </Button>
+                    <Button variant="icon" @click="saveDesign" :disabled="isSaving" :class="{'disabled:opacity-50': true}" title="Simpan Desain">
+                        <PhFloppyDisk :size="18" />
+                    </Button>
                 </div>
             </div>
 
             <!-- Variant Info -->
-            <div class="studio__variant-info">
-                <div class="studio__variant-item" style="padding-top: 6px; padding-bottom: 6px;">
-                    <span class="studio__variant-label">Warna</span>
-                    <select v-model="currentWarna" class="studio__variant-select">
-                        <option v-for="w in availableWarnas" :key="w" :value="w">{{ w }}</option>
-                    </select>
+            <div class="flex border-b border-gray-200 dark:border-gray-800 text-xs">
+                <div class="flex-1 flex flex-col items-center gap-1 p-2 border-r border-gray-200 dark:border-gray-800">
+                    <span class="font-medium uppercase tracking-wider text-[9px] text-gray-500">Warna</span>
+                    <Button variant="select" v-model="currentWarna">
+                        <option v-for="w in availableWarnas" :key="w" :value="w"
+                            class="text-black bg-white dark:bg-gray-900 dark:text-white">{{ w }}</option>
+                    </Button>
                 </div>
-                <div class="studio__variant-item" style="padding-top: 6px; padding-bottom: 6px;">
-                    <span class="studio__variant-label">Ukuran</span>
-                    <select v-model="currentUkuran" class="studio__variant-select">
-                        <option v-for="u in availableUkurans" :key="u" :value="u">{{ u }}</option>
-                    </select>
+                <div class="flex-1 flex flex-col items-center gap-1 p-2 border-r border-gray-200 dark:border-gray-800">
+                    <span class="font-medium uppercase tracking-wider text-[9px] text-gray-500">Ukuran</span>
+                    <Button variant="select" v-model="currentUkuran">
+                        <option v-for="u in availableUkurans" :key="u" :value="u"
+                            class="text-black bg-white dark:bg-gray-900 dark:text-white">{{ u }}</option>
+                    </Button>
                 </div>
-                <div class="studio__variant-item">
-                    <span class="studio__variant-label">Harga</span>
-                    <span class="studio__variant-value">{{ formatRupiah(unitPrice) }}</span>
+                <div class="flex-1 flex flex-col items-center gap-1 p-2">
+                    <span class="font-medium uppercase tracking-wider text-[9px] text-gray-500">Harga</span>
+                    <span>{{ formatRupiah(unitPrice) }}</span>
                 </div>
             </div>
 
             <!-- Tab Navigation -->
-            <div class="studio__tabs">
-                <button v-for="tab in tabs" :key="tab.id" class="studio__tab"
-                    :class="{ 'studio__tab--active': activeTab === tab.id }" @click="activeTab = tab.id">
+            <div class="flex border-b border-gray-200 dark:border-gray-800">
+                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                    class="flex-1 flex flex-col items-center gap-1 py-3 px-2 text-[10px] font-medium uppercase tracking-wider transition-colors border-b-2"
+                    :class="activeTab === tab.id ? 'border-black text-black dark:border-indigo-400 dark:text-indigo-400 bg-gray-100 dark:bg-gray-800' : 'border-transparent text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'">
                     <component :is="tab.icon" :size="18" />
                     <span>{{ tab.label }}</span>
                 </button>
             </div>
 
             <!-- Tab Content -->
-            <div class="studio__tab-content">
-
+            <div class="flex-1 overflow-y-auto">
                 <!-- ─── WARNA ─── -->
-                <div v-show="activeTab === 'warna'" class="studio__panel">
-                    <div class="studio__panel-title">Pilih Warna Kaos</div>
-                    <p class="studio__panel-desc">Warna akan diterapkan ke seluruh zona pattern</p>
+                <div v-show="activeTab === 'warna'" class="p-4">
+                    <div class="text-xs font-medium uppercase tracking-wider mb-1 text-gray-900 dark:text-white">Pilih
+                        Warna Kaos</div>
+                    <p class="text-[11px] text-gray-500 mb-4">Warna akan diterapkan ke seluruh zona pattern</p>
 
-                    <div class="color-grid">
-                        <button v-for="(c, i) in colorPalette" :key="c.id" class="color-swatch"
-                            :class="{ 'color-swatch--active': selectedColorIndex === i }" :title="c.name"
-                            @click="selectColor(i)">
-                            <span class="color-swatch__dot" :style="{ backgroundColor: c.hex }"></span>
-                            <span class="color-swatch__label">{{ c.name }}</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button v-for="(c, i) in colorPalette" :key="c.id" @click="selectColor(i)"
+                            class="flex items-center gap-2 p-2 border transition-colors"
+                            :class="selectedColorIndex === i ? 'border-black bg-gray-100 dark:border-indigo-400 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'">
+                            <span class="w-5 h-5 rounded-full shrink-0 border border-black/10 dark:border-white/10"
+                                :style="{ backgroundColor: c.hex }"></span>
+                            <span class="text-xs font-medium truncate">{{ c.name }}</span>
                         </button>
                     </div>
 
-                    <div v-if="colorPalette.length === 0" class="studio__empty">
+                    <div v-if="colorPalette.length === 0" class="text-xs text-center text-gray-500 py-6">
                         Tidak ada data warna tersedia.
                     </div>
                 </div>
 
                 <!-- ─── TEKS ─── -->
-                <div v-show="activeTab === 'teks'" class="studio__panel">
-                    <div class="studio__panel-title">Teks & Tipografi</div>
-                    <p class="studio__panel-desc">Pilih teks di canvas untuk mengedit, atau tambah teks baru.</p>
+                <div v-show="activeTab === 'teks'" class="p-4">
+                    <div class="text-xs font-medium uppercase tracking-wider mb-1 text-gray-900 dark:text-white">Teks &
+                        Tipografi</div>
+                    <p class="text-[11px] text-gray-500 mb-4">Pilih teks di canvas untuk mengedit, atau tambah teks
+                        baru.</p>
 
-                    <!-- Tombol Tambah Teks Baru (selalu visible) -->
-                    <div class="form-group">
-                        <button class="upload-btn" @click="addNewText">
-                            <PhTextT :size="20" />
-                            <span>Tambah Teks Baru</span>
-                        </button>
+                    <!-- Tombol Tambah Teks Baru -->
+                    <div class="mb-4">
+                        <Button variant="primary" class="w-full flex items-center justify-center gap-2 border-dashed"
+                            @click="addNewText">
+                            <PhTextT :size="18" />
+                            Tambah Teks Baru
+                        </Button>
                     </div>
 
-                    <div v-if="hasSelectedText" class="text-editor">
-                        <div class="studio__panel-subtitle">Edit Teks Terpilih</div>
+                    <div v-if="hasSelectedText" class="flex flex-col gap-3">
+                        <div
+                            class="text-[10px] font-medium uppercase tracking-wider text-gray-500 pb-1 border-b border-gray-200 dark:border-gray-800">
+                            Edit Teks Terpilih</div>
+
                         <!-- Isi Teks -->
-                        <div class="form-group">
-                            <label class="form-label">Isi Teks</label>
-                            <input id="text-input" v-model="textInput" type="text" class="form-input"
+                        <div>
+                            <label class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Isi
+                                Teks</label>
+                            <input v-model="textInput" type="text"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-indigo-400 transition-colors"
                                 placeholder="Ketik teks..." @input="handleUpdateText" />
                         </div>
 
-                        <!-- Bold & Italic -->
-                        <div class="form-group">
-                            <label class="form-label">Gaya Teks</label>
-                            <div class="style-toggles">
-                                <button class="style-toggle-btn" :class="{ active: textBold }" title="Bold"
-                                    @click="handleToggleBold">
+                        <!-- Gaya Teks -->
+                        <div>
+                            <label
+                                class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Gaya
+                                Teks</label>
+                            <div class="flex gap-1.5">
+                                <button @click="handleToggleBold"
+                                    class="w-9 h-9 flex items-center justify-center rounded border transition-colors"
+                                    :class="textBold ? 'border-black bg-gray-100 dark:border-indigo-400 dark:bg-indigo-900/30 text-black dark:text-indigo-400' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'">
                                     <PhTextBolder :size="18" />
                                 </button>
-                                <button class="style-toggle-btn" :class="{ active: textItalic }" title="Italic"
-                                    @click="handleToggleItalic">
+                                <button @click="handleToggleItalic"
+                                    class="w-9 h-9 flex items-center justify-center rounded border transition-colors"
+                                    :class="textItalic ? 'border-black bg-gray-100 dark:border-indigo-400 dark:bg-indigo-900/30 text-black dark:text-indigo-400' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'">
                                     <PhTextItalic :size="18" />
                                 </button>
-                                <button class="style-toggle-btn" :class="{ active: textFlipX }" title="Mirror (Flip Horizontal)"
-                                    @click="handleToggleTextFlip">
+                                <button @click="handleToggleTextFlip"
+                                    class="w-9 h-9 flex items-center justify-center rounded border transition-colors"
+                                    :class="textFlipX ? 'border-black bg-gray-100 dark:border-indigo-400 dark:bg-indigo-900/30 text-black dark:text-indigo-400' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'">
                                     <PhArrowsLeftRight :size="18" />
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Text Rotation -->
-                        <div class="form-group">
-                            <label class="form-label">Rotasi Teks</label>
-                            <div class="slider-row">
-                                <input id="text-rotation" v-model.number="textRotation" type="range" min="0" max="360"
-                                    step="1" class="form-range" @input="handleTextRotation" />
-                                <span class="slider-val">{{ textRotation }}°</span>
+                        <!-- Rotasi Teks -->
+                        <div>
+                            <label
+                                class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Rotasi
+                                Teks</label>
+                            <div class="flex items-center gap-2">
+                                <input v-model.number="textRotation" type="range" min="0" max="360" step="1"
+                                    class="flex-1 accent-black dark:accent-indigo-400 h-1 cursor-pointer"
+                                    @input="handleTextRotation" />
+                                <span class="text-[11px] font-medium w-10 text-right">{{ textRotation }}°</span>
                             </div>
                         </div>
 
                         <!-- Font Family -->
-                        <div class="form-group">
-                            <label class="form-label">Font</label>
-                            <select id="text-font" v-model="textFontFamily" class="form-select"
-                                @change="handleUpdateText">
+                        <div>
+                            <label
+                                class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Font</label>
+                            <select v-model="textFontFamily" @change="handleUpdateText"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-black dark:text-white outline-none cursor-pointer">
                                 <option v-for="f in fontFamilies" :key="f" :value="f">{{ f }}</option>
                             </select>
                         </div>
 
                         <!-- Font Size -->
-                        <div class="form-group">
-                            <label class="form-label">Ukuran</label>
-                            <select id="text-size" v-model="textFontSize" class="form-select"
-                                @change="handleUpdateText">
+                        <div>
+                            <label
+                                class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Ukuran</label>
+                            <select v-model="textFontSize" @change="handleUpdateText"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-black dark:text-white outline-none cursor-pointer">
                                 <option v-for="s in fontSizes" :key="s" :value="s">{{ s }}px</option>
                             </select>
                         </div>
 
                         <!-- Warna Teks -->
-                        <div class="form-group">
-                            <label class="form-label">Warna Teks</label>
-                            <input id="text-color" v-model="textColor" type="color" class="form-color"
-                                @input="handleUpdateText" />
+                        <div>
+                            <label
+                                class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Warna
+                                Teks</label>
+                            <input v-model="textColor" type="color" @input="handleUpdateText"
+                                class="w-12 h-8 p-0.5 border border-gray-300 dark:border-gray-700 rounded cursor-pointer bg-white dark:bg-gray-900" />
                         </div>
 
-                        <div class="form-group mt-2">
-                            <button class="delete-btn" @click="deleteSelected">
+                        <div class="mt-2">
+                            <Button variant="light"
+                                class="w-full !border-red-600 !text-red-600 hover:!bg-red-50 flex items-center justify-center gap-2 py-2"
+                                @click="deleteSelected">
                                 <PhTrash :size="16" />
                                 Hapus Teks
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
-                    <div v-else class="studio__empty">
-                        <div>Klik teks di canvas untuk mengedit.</div>
+                    <div v-else class="text-xs text-center text-gray-500 py-6">
+                        Klik teks di canvas untuk mengedit.
                     </div>
                 </div>
 
                 <!-- ─── GAMBAR ─── -->
-                <div v-show="activeTab === 'gambar'" class="studio__panel">
-                    <div class="studio__panel-title">Tambah Gambar</div>
+                <div v-show="activeTab === 'gambar'" class="p-4">
+                    <div class="text-xs font-medium uppercase tracking-wider mb-4 text-gray-900 dark:text-white">Tambah
+                        Gambar</div>
 
                     <!-- Upload -->
-                    <div class="form-group">
-                        <button class="upload-btn" @click="triggerUpload">
-                            <PhUploadSimple :size="20" />
-                            <span>Pilih File Gambar</span>
-                        </button>
+                    <div class="mb-4">
+                        <Button variant="primary" class="w-full flex items-center justify-center gap-2 border-dashed"
+                            @click="triggerUpload">
+                            <PhUploadSimple :size="18" />
+                            Pilih File Gambar
+                        </Button>
                         <input ref="fileInputRef" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                            class="hidden-input" @change="handleFileUpload" />
+                            class="hidden" @change="handleFileUpload" />
                     </div>
 
                     <!-- Resize -->
-                    <div class="form-group">
-                        <label class="form-label">Ukuran Gambar</label>
-                        <div class="slider-row">
-                            <input id="image-scale" v-model.number="imageScale" type="range" min="0.1" max="3"
-                                step="0.05" class="form-range" @input="handleImageScale" />
-                            <span class="slider-val">{{ (imageScale * 100).toFixed(0) }}%</span>
+                    <div class="mb-3">
+                        <label class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Ukuran
+                            Gambar</label>
+                        <div class="flex items-center gap-2">
+                            <input v-model.number="imageScale" type="range" min="0.1" max="3" step="0.05"
+                                class="flex-1 accent-black dark:accent-indigo-400 h-1 cursor-pointer"
+                                @input="handleImageScale" />
+                            <span class="text-[11px] font-medium w-10 text-right">{{ (imageScale * 100).toFixed(0)
+                                }}%</span>
                         </div>
                     </div>
 
                     <!-- Rotate -->
-                    <div class="form-group">
-                        <label class="form-label">Rotasi Gambar</label>
-                        <div class="slider-row">
-                            <input id="image-rotation" v-model.number="imageRotation" type="range" min="0" max="360"
-                                step="1" class="form-range" @input="handleImageRotation" />
-                            <span class="slider-val">{{ imageRotation }}°</span>
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-medium uppercase tracking-wider text-gray-500 mb-1">Rotasi
+                            Gambar</label>
+                        <div class="flex items-center gap-2">
+                            <input v-model.number="imageRotation" type="range" min="0" max="360" step="1"
+                                class="flex-1 accent-black dark:accent-indigo-400 h-1 cursor-pointer"
+                                @input="handleImageRotation" />
+                            <span class="text-[11px] font-medium w-10 text-right">{{ imageRotation }}°</span>
                         </div>
                     </div>
 
                     <!-- Delete -->
-                    <div class="form-group">
-                        <button class="delete-btn" @click="deleteSelected">
+                    <div>
+                        <Button variant="light"
+                            class="w-full !border-red-600 !text-red-600 hover:!bg-red-50 flex items-center justify-center gap-2"
+                            @click="deleteSelected">
                             <PhTrash :size="16" />
                             Hapus Terpilih
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
 
             <!-- Bottom Toolbar -->
-            <div class="studio__sidebar-footer">
-                <button class="studio__checkout-btn" @click="handleCheckout" :disabled="isCheckingOut">
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-2">
+                <Button variant="solid" class="w-full flex justify-center items-center gap-2 tracking-wider text-xs"
+                    @click="handleCheckout" :disabled="isCheckingOut">
                     <PhShoppingCart :size="16" weight="bold" />
                     {{ isCheckingOut ? 'Memproses...' : 'Checkout' }}
-                </button>
-                <button class="studio__reset-btn" @click="clearDesign">
+                </Button>
+                <Button variant="light" class="w-full flex justify-center items-center gap-2 text-xs"
+                    @click="clearDesign">
                     <PhArrowCounterClockwise :size="16" />
                     Reset Desain
-                </button>
+                </Button>
             </div>
         </aside>
 
         <!-- ═══ TENGAH: Canvas Editor 2D ═══ -->
-        <main class="studio__canvas">
-            <div class="studio__canvas-header">
-                <h3 class="studio__canvas-title">Canvas Editor</h3>
+        <main class="flex-1 flex flex-col min-w-0 border-r border-gray-200 dark:border-gray-800 relative z-10">
+            <div
+                class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white dark:bg-[#16162a] dark:border-gray-800">
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white m-0">Canvas Editor</h3>
             </div>
-            <div class="studio__canvas-body">
+            <div class="flex-1 min-h-0 overflow-hidden relative">
                 <DesignEditor ref="editorRef" :pattern-path="patternPath" :selected-color="selectedColor"
                     @canvas-update="onCanvasUpdate" @texts-loaded="onTextsLoaded" @selection="handleSelection" />
             </div>
         </main>
 
         <!-- ═══ KANAN: 3D Preview ═══ -->
-        <section class="studio__preview">
-            <div class="studio__preview-header">
-                <h3 class="studio__preview-title">3D Preview</h3>
+        <section class="w-[420px] min-w-[420px] flex flex-col relative z-10">
+            <div
+                class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white dark:bg-[#16162a] dark:border-gray-800">
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white m-0">3D Preview</h3>
             </div>
-            <div class="studio__preview-body">
+            <div class="flex-1 min-h-0 overflow-hidden relative">
                 <TshirtViewer ref="viewerRef" :design-canvas="designCanvas" :model-path="modelPath"
                     @renderer-ready="onRendererReady" />
             </div>
         </section>
     </div>
 </template>
-
-<style scoped>
-/* ═══════════════════════════════════════════
-   STUDIO LAYOUT — 3 Column
-   ═══════════════════════════════════════════ */
-
-.studio {
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    background: #0f0f1a;
-    color: #e2e8f0;
-}
-
-/* ─── Sidebar Kiri ─── */
-.studio__sidebar {
-    width: 280px;
-    min-width: 280px;
-    display: flex;
-    flex-direction: column;
-    background: #16162a;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-}
-
-.studio__sidebar-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio__title {
-    flex: 1;
-    font-size: 13px;
-    font-weight: 700;
-    color: #f1f5f9;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin: 0;
-}
-
-.studio__header-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.studio__icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.studio__icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.studio__icon-btn--accent {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.3);
-    color: #818cf8;
-}
-
-.studio__icon-btn--accent:hover {
-    background: rgba(99, 102, 241, 0.25);
-    color: #a5b4fc;
-}
-
-.studio__icon-btn--sm {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-}
-
-/* ─── Tabs ─── */
-.studio__tabs {
-    display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio__tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border: none;
-    background: transparent;
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border-bottom: 2px solid transparent;
-}
-
-.studio__tab:hover {
-    color: #94a3b8;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.studio__tab--active {
-    color: #818cf8;
-    border-bottom-color: #818cf8;
-    background: rgba(99, 102, 241, 0.05);
-}
-
-/* ─── Tab Content ─── */
-.studio__tab-content {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.studio__panel {
-    padding: 16px;
-}
-
-.studio__panel-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: #cbd5e1;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-}
-
-.studio__panel-desc {
-    font-size: 11px;
-    color: #64748b;
-    margin-bottom: 16px;
-    margin-top: 0;
-}
-
-.studio__empty {
-    font-size: 12px;
-    color: #475569;
-    text-align: center;
-    padding: 24px 16px;
-}
-
-/* ─── Color Grid ─── */
-.color-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-}
-
-.color-swatch {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.color-swatch:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
-.color-swatch--active {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: #818cf8;
-}
-
-.color-swatch__dot {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-}
-
-.color-swatch__label {
-    font-size: 11px;
-    font-weight: 500;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ─── Text List ─── */
-.text-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 16px;
-}
-
-.text-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 8px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-}
-
-.text-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.text-item--active {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: #818cf8;
-}
-
-.text-item__name {
-    font-size: 10px;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.text-item__preview {
-    font-size: 13px;
-    font-weight: 500;
-    color: #e2e8f0;
-}
-
-.text-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* ─── Form Controls ─── */
-.form-group {
-    margin-bottom: 0;
-}
-
-.form-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.form-input,
-.form-select {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 13px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #e2e8f0;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.form-input:focus,
-.form-select:focus {
-    border-color: #818cf8;
-}
-
-.form-select {
-    cursor: pointer;
-}
-
-.form-select option {
-    background: #1e1e3a;
-    color: #e2e8f0;
-}
-
-.form-color {
-    width: 48px;
-    height: 34px;
-    padding: 2px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* ─── Upload Button ─── */
-.upload-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px dashed rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    color: #94a3b8;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.upload-btn:hover {
-    border-color: #818cf8;
-    background: rgba(99, 102, 241, 0.05);
-    color: #a5b4fc;
-}
-
-/* ─── Delete Button ─── */
-.delete-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 6px;
-    background: rgba(239, 68, 68, 0.08);
-    color: #f87171;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.delete-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.5);
-}
-
-/* ─── Slider ─── */
-.slider-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.form-range {
-    flex: 1;
-    accent-color: #818cf8;
-    height: 4px;
-}
-
-.slider-val {
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
-    min-width: 42px;
-    text-align: right;
-}
-
-/* ─── Variant Info ─── */
-.studio__variant-info {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio__variant-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 10px 8px;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio__variant-item:last-child {
-    border-right: none;
-}
-
-.studio__variant-label {
-    font-size: 9px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.studio__variant-value {
-    font-size: 12px;
-    font-weight: 600;
-    color: #e2e8f0;
-}
-
-.studio__variant-select {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #e2e8f0;
-    border-radius: 4px;
-    padding: 2px 4px;
-    font-size: 11px;
-    font-weight: 600;
-    outline: none;
-    cursor: pointer;
-    width: 100%;
-    text-align: center;
-}
-
-.studio__variant-select option {
-    background: #1a1a2e;
-    color: #e2e8f0;
-}
-
-/* ─── Sidebar Footer ─── */
-.studio__sidebar-footer {
-    padding: 12px 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.studio__checkout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.studio__checkout-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-}
-
-.studio__checkout-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.studio__reset-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    padding: 10px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    color: #94a3b8;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.studio__reset-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #f1f5f9;
-}
-
-/* ─── Canvas Editor (Tengah) ─── */
-.studio__canvas {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio__canvas-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.studio__canvas-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #cbd5e1;
-    margin: 0;
-}
-
-.studio__canvas-controls {
-    display: flex;
-    gap: 4px;
-}
-
-.studio__canvas-body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-/* ─── 3D Preview (Kanan) ─── */
-.studio__preview {
-    width: 420px;
-    min-width: 420px;
-    display: flex;
-    flex-direction: column;
-}
-
-.studio__preview-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.studio__preview-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #cbd5e1;
-    margin: 0;
-}
-
-.studio__preview-body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-/* ─── Utility ─── */
-.hidden-input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    height: 0;
-}
-
-/* ─── Scrollbar ─── */
-.studio__tab-content::-webkit-scrollbar {
-    width: 4px;
-}
-
-.studio__tab-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.studio__tab-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-.studio__tab-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* ─── Bold/Italic Toggle ─── */
-.studio__panel-subtitle {
-    font-size: 11px;
-    font-weight: 600;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.style-toggles {
-    display: flex;
-    gap: 6px;
-}
-
-.style-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.style-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #e2e8f0;
-}
-
-.style-toggle-btn.active {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: #6366f1;
-    color: #a5b4fc;
-}
-</style>

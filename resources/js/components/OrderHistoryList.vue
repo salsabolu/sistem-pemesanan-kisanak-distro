@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import NavIcon from '@/components/NavIcon.vue';
 import ProductCard from '@/components/ProductCard.vue';
 import DesignPreviewModal from '@/components/DesignPreviewModal.vue';
@@ -28,11 +29,11 @@ function formatDateTime(value: string | null): string {
     if (!value) return '-';
     const d = new Date(value);
     if (isNaN(d.getTime())) return '-';
-    const dd   = String(d.getDate()).padStart(2, '0');
-    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    const hh   = String(d.getHours()).padStart(2, '0');
-    const min  = String(d.getMinutes()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
     return `${dd}-${mm}-${yyyy}, ${hh}:${min}`;
 }
 
@@ -125,9 +126,8 @@ function hasDesain(produkId: number, detailPesananList: any[]): boolean {
                                 :imageAlt="prod.imageAlt" :productName="prod.productName" :color="prod.color"
                                 :size="prod.size" :price="prod.price" :quantity="prod.quantity"
                                 :subtotal="prod.subtotal" :showQuantity="true" :showSubtotal="true" imageSize="lg">
-                                <Button v-if="hasDesain(prod.produkId, item.detailPesanan)"
-                                    variant="solid"
-                                    class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+                                <Button v-if="hasDesain(prod.produkId, item.detailPesanan)" variant="solid"
+                                    class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase"
                                     @click="openDesignPreview(prod.produkId, prod.productName, item.detailPesanan)">
                                     Lihat Hasil Kustom Desain
                                 </Button>
@@ -172,7 +172,16 @@ function hasDesain(produkId: number, detailPesananList: any[]): boolean {
         </div>
     </div>
 
-    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
-        :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
-        @close="isDesignPreviewOpen = false" />
+    <!-- Pagination -->
+    <div v-if="props.pesanan?.links && props.pesanan.links.length > 3" class="mt-8 flex items-center justify-center gap-2">
+        <template v-for="(link, i) in props.pesanan.links" :key="i">
+            <Link v-if="link.url" :href="link.url" v-html="link.label" preserve-scroll
+                class="px-3.5 py-2 text-xs font-medium border rounded transition-colors"
+                :class="link.active ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'" />
+            <span v-else v-html="link.label" class="px-3.5 py-2 text-xs font-medium border border-gray-200 rounded text-gray-400 bg-gray-50 cursor-not-allowed"></span>
+        </template>
+    </div>
+
+    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson" :product-name="previewProductName"
+        :teks-list="previewTeksList" :gambar-list="previewGambarList" @close="isDesignPreviewOpen = false" />
 </template>

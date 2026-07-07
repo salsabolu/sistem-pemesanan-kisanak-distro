@@ -289,7 +289,7 @@ function paginationPages(): (number | string)[] {
                             <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}</div>
                             <Button v-if="hasDesain(prod, selectedItem?.detailPesanan ?? [])"
                                 variant="solid"
-                                class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+                                class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase"
                                 @click.stop="openDesignPreview(prod, selectedItem?.detailPesanan ?? [])">
                                 Lihat Hasil Kustom Desain
                             </Button>
