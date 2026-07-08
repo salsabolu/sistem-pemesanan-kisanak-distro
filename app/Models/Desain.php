@@ -13,6 +13,7 @@ class Desain extends Model
     protected $fillable = [
         'id_detail_pesanan',
         'desain_json',
+        'file_excel',
     ];
 
     public function detailPesanan()

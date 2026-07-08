@@ -86,6 +86,7 @@ const previewDesainJson = ref<string | null>(null);
 const previewProductName = ref('');
 const previewTeksList = ref<Array<{ id: number; teks: string }>>([]);
 const previewGambarList = ref<Array<{ id: number; file: string }>>([]);
+const previewFileExcel = ref<string | null>(null);
 
 function openDesignPreview(produk: any, detailPesananList: any[]) {
     const detail = detailPesananList.find((dp: any) => dp.id_produk === produk.id);
@@ -94,6 +95,7 @@ function openDesignPreview(produk: any, detailPesananList: any[]) {
         previewProductName.value = produk.nama ?? '';
         previewTeksList.value = detail.desain.teks ?? [];
         previewGambarList.value = detail.desain.gambar ?? [];
+        previewFileExcel.value = detail.desain.file_excel ?? null;
         isDesignPreviewOpen.value = true;
     }
 }
@@ -325,6 +327,7 @@ function paginationPages(): (number | string)[] {
 
             <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
                 :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
+                :file-excel="previewFileExcel"
                 @close="isDesignPreviewOpen = false" />
         </main>
     </div>

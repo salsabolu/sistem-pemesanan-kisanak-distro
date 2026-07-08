@@ -22,6 +22,10 @@ type CartItem = {
     unitPriceText: string;
     quantity: number;
     desainId?: number | null;
+    customText?: string | null;
+    customLogoPath?: string | null;
+    isBulkItem?: boolean;
+    bulkData?: Array<{ teksKustom: string | null; logoPath: string | null }>;
 };
 
 type PesananAktifItem = {
@@ -148,6 +152,15 @@ function submitOrder() {
         formData.append(`items[${index}][quantity]`, String(it.quantity));
         formData.append(`items[${index}][unitPrice]`, String(it.unitPrice));
         if (it.desainId) formData.append(`items[${index}][desainId]`, String(it.desainId));
+        if (it.customText) formData.append(`items[${index}][customText]`, it.customText);
+        if (it.customLogoPath) formData.append(`items[${index}][customLogoPath]`, it.customLogoPath);
+        
+        if (it.bulkData && it.bulkData.length > 0) {
+            it.bulkData.forEach((bd, bIndex) => {
+                if (bd.teksKustom) formData.append(`items[${index}][bulkData][${bIndex}][teksKustom]`, bd.teksKustom);
+                if (bd.logoPath) formData.append(`items[${index}][bulkData][${bIndex}][logoPath]`, bd.logoPath);
+            });
+        }
     });
 
     // Bersihkan keranjang SEBELUM request dikirim.

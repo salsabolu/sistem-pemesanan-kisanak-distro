@@ -17,6 +17,7 @@ const props = defineProps<{
     productName?: string;
     teksList?: Array<{ id: number; teks: string }>;
     gambarList?: Array<{ id: number; file: string }>;
+    fileExcel?: string | null;
 }>();
 
 const emit = defineEmits<{ (e: 'close'): void }>();
@@ -38,7 +39,11 @@ const alertMessage = ref('');
 const alertType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
 const displayTeksList = computed(() => {
-    return (props.teksList && props.teksList.length > 0) ? props.teksList : internalTeksList.value;
+    // If DB teks list has data, always use it
+    if (props.teksList && props.teksList.length > 0) return props.teksList;
+    // For non-bulk orders, fall back to canvas-extracted teks
+    // For bulk orders with no DB teks yet, also fall back so sidebar stays visible
+    return internalTeksList.value;
 });
 
 const isDarkMode = ref(document.documentElement.classList.contains('dark'));
@@ -71,7 +76,10 @@ watch(viewMode, (val) => {
 });
 
 const displayGambarList = computed(() => {
-    return (props.gambarList && props.gambarList.length > 0) ? props.gambarList : internalGambarList.value;
+    // If DB gambar list has data, always use it
+    if (props.gambarList && props.gambarList.length > 0) return props.gambarList;
+    // Fall back to canvas-extracted gambar
+    return internalGambarList.value;
 });
 
 const CANVAS_DISPLAY_SIZE = 500;
@@ -431,7 +439,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <!-- Sidebar Lists -->
-                <div v-if="displayTeksList.length > 0 || displayGambarList.length > 0"
+                <div v-if="displayTeksList.length > 0 || displayGambarList.length > 0 || fileExcel"
                     class="w-full sm:w-[260px] sm:min-w-[260px] relative z-20 bg-white dark:bg-black/20 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-white/10">
                     <div class="relative sm:absolute inset-0 sm:overflow-y-auto">
                         <div v-if="displayTeksList.length > 0" class="p-4 border-b border-gray-200 dark:border-white/5">
@@ -476,6 +484,18 @@ onBeforeUnmount(() => {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Opsi Tambahan (Excel Bulk) -->
+                        <div v-if="fileExcel" class="p-4 border-b border-gray-200 dark:border-white/5">
+                            <h4
+                                class="text-[11px] font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                                File Order Bulk</h4>
+                            <a :href="fileExcel" download
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-green hover:bg-green-hover text-white text-sm rounded transition-colors w-full justify-center">
+                                <PhDownloadSimple :size="16" />
+                                Unduh File Excel
+                            </a>
                         </div>
                     </div>
                 </div>

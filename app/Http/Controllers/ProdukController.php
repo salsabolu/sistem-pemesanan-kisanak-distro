@@ -154,7 +154,13 @@ class ProdukController extends Controller
             'desain_json' => 'required|string',
             'teks'        => 'nullable|array',
             'teks.*.teks' => 'required|string|max:255',
+            'excel_file'  => 'nullable|file|mimes:xlsx,xls,csv|max:5120',
         ]);
+
+        $excelPath = null;
+        if ($request->hasFile('excel_file')) {
+            $excelPath = '/storage/' . $request->file('excel_file')->store('desain-excel', 'public');
+        }
 
         // Buat record desain (tanpa id_detail_pesanan untuk draft)
         // Untuk saat ini, simpan sebagai draft dengan id_detail_pesanan = null
@@ -162,6 +168,7 @@ class ProdukController extends Controller
         $desain = Desain::create([
             'id_detail_pesanan' => null,
             'desain_json'       => $validated['desain_json'],
+            'file_excel'        => $excelPath,
         ]);
 
         // Simpan teks
@@ -174,7 +181,7 @@ class ProdukController extends Controller
             }
         }
 
-        // Simpan file gambar (jika ada)
+        // Simpan file gambar canvas (jika ada)
         if ($request->hasFile('gambar_files')) {
             foreach ($request->file('gambar_files') as $file) {
                 $path = $file->store('desain-gambar', 'public');
@@ -185,7 +192,21 @@ class ProdukController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Desain berhasil disimpan.')->with('desainId', $desain->id);
+        // Simpan file logo bulk (jika ada) tapi TANPA membuat record Gambar
+        // Record Gambar untuk logo bulk akan dibuat nanti saat checkout di KeranjangController
+        $logoMap = [];
+        if ($request->hasFile('logo_files')) {
+            foreach ($request->file('logo_files') as $file) {
+                $path = $file->store('desain-gambar', 'public');
+                $originalName = $file->getClientOriginalName();
+                $logoMap[$originalName] = '/storage/' . $path;
+            }
+        }
+
+        return redirect()->back()
+            ->with('success', 'Desain berhasil disimpan.')
+            ->with('desainId', $desain->id)
+            ->with('logoMap', $logoMap);
     }
 
     public function store(Request $request)

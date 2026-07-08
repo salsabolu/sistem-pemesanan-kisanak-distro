@@ -33,9 +33,12 @@ import {
     PhShoppingCart,
     PhArrowsLeftRight,
     PhUploadSimple,
+    PhTable,
 } from '@phosphor-icons/vue';
 import TshirtViewer from '@/components/customizer/TshirtViewer.vue';
 import DesignEditor from '@/components/customizer/DesignEditor.vue';
+import ExcelBulkUploader from '@/components/customizer/ExcelBulkUploader.vue';
+import type { BulkOrderRow } from '@/components/customizer/ExcelBulkUploader.vue';
 import Button from '@/components/Button.vue';
 import Alert from '@/components/Alert.vue';
 import { cmykToHex } from '@/lib/colorUtils';
@@ -91,7 +94,7 @@ const editorRef = ref<InstanceType<typeof DesignEditor> | null>(null);
 const threeRenderer = ref<THREE.WebGLRenderer | null>(null);
 
 // ─── Tab Aktif ───
-type TabId = 'warna' | 'teks' | 'gambar';
+type TabId = 'warna' | 'teks' | 'gambar' | 'excel';
 const activeTab = ref<TabId>('warna');
 
 const showAlert = ref(false);
@@ -153,6 +156,7 @@ const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'warna', label: 'Warna', icon: PhPalette },
     { id: 'teks', label: 'Teks', icon: PhTextT },
     { id: 'gambar', label: 'Gambar', icon: PhImage },
+    { id: 'excel', label: 'Excel', icon: PhTable },
 ];
 
 // ═══════════════════════════════════════════
@@ -416,19 +420,57 @@ const modelPath = computed(() => '/models/tshirt1.obj');
 const patternPath = computed(() => '/patterns/pattern-tshirt1.svg');
 
 // ═══════════════════════════════════════════
+// EXCEL BULK ORDER
+// ═══════════════════════════════════════════
+
+const bulkOrderRows = ref<BulkOrderRow[]>([]);
+const bulkLogoFiles = ref<File[]>([]);
+const bulkExcelFile = ref<File | null>(null);
+
+function handleBulkUpdate(rows: BulkOrderRow[], file: File | null = null) {
+    bulkOrderRows.value = rows;
+    bulkExcelFile.value = file;
+}
+
+function handleBulkLogoFiles(files: File[]) {
+    bulkLogoFiles.value = files;
+}
+
+/** All available sizes (not filtered by current color) for bulk order */
+const allAvailableUkurans = computed(() => {
+    if (!props.variants) return [];
+    const ukurans = new Set(props.variants.map(v => v.ukuran?.nama).filter(Boolean));
+    return Array.from(ukurans) as string[];
+});
+
+const hasBulkOrder = computed(() =>
+    bulkOrderRows.value.filter(r => r.valid).length > 0
+);
+
+const bulkTotalHarga = computed(() =>
+    bulkOrderRows.value.reduce((sum, r) => sum + (r.valid ? r.subtotal : 0), 0)
+);
+
+const bulkTotalItems = computed(() =>
+    bulkOrderRows.value.reduce((sum, r) => sum + (r.valid ? r.jumlah : 0), 0)
+);
+
+// ═══════════════════════════════════════════
 // CHECKOUT — Simpan desain lalu ke keranjang
 // ═══════════════════════════════════════════
 
 const isCheckingOut = ref(false);
 const savedDesainId = ref<number | null>(null);
+const savedLogoMap = ref<Record<string, string>>({});
 
-// Watch for desainId flash dari simpanDesain
+// Watch for desainId dan logoMap flash dari simpanDesain
 watch(
-    () => page.props.flash?.desainId,
-    (id) => {
-        if (id) savedDesainId.value = id;
+    () => page.props.flash,
+    (flash) => {
+        if (flash?.desainId) savedDesainId.value = flash.desainId;
+        if (flash?.logoMap) savedLogoMap.value = flash.logoMap;
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 );
 
 function formatRupiah(value: number) {
@@ -469,16 +511,39 @@ async function handleCheckout() {
             const designJson = editorRef.value.getDesignJson();
             const texts = editorRef.value.getTexts();
 
-            router.post(`/katalog/produk/${props.produk?.id}/kustomisasi/simpan`, {
+            // Cari semua ID gambar yang masih ada di canvas
+            const activeImageIds = (designJson as any).fabricObjects?.objects
+                ?.filter((o: any) => o.type === 'image' && o.kisanakId)
+                ?.map((o: any) => o.kisanakId) || [];
+
+            // Saring file yang diupload, HANYA ambil file yang belum dihapus dari canvas
+            const finalCanvasFiles = uploadedFiles.value.filter(f => activeImageIds.includes((f as any).kisanakId));
+
+            const payload: any = {
                 desain_json: JSON.stringify(designJson),
-                teks: texts.map((t) => ({ teks: t.text })),
-                gambar_files: uploadedFiles.value,
-            }, {
+                teks: hasBulkOrder.value ? [] : texts.map((t) => ({ teks: t.text })),
+                gambar_files: finalCanvasFiles.length > 0 ? Array.from(finalCanvasFiles) : [],
+            };
+
+            if (hasBulkOrder.value) {
+                if (bulkExcelFile.value) {
+                    payload.excel_file = bulkExcelFile.value;
+                }
+                if (bulkLogoFiles.value.length > 0) {
+                    payload.logo_files = Array.from(bulkLogoFiles.value);
+                }
+            }
+
+            router.post(`/katalog/produk/${props.produk?.id}/kustomisasi/simpan`, payload, {
+                forceFormData: true,
                 preserveScroll: true,
                 onSuccess: (page: any) => {
-                    const desainId = page.props.flash?.desainId;
-                    if (desainId) {
-                        savedDesainId.value = desainId;
+                    const flash = page.props.flash;
+                    if (flash?.desainId) {
+                        savedDesainId.value = flash.desainId;
+                    }
+                    if (flash?.logoMap) {
+                        savedLogoMap.value = flash.logoMap;
                     }
                     addToCartAndRedirect();
                 },
@@ -496,26 +561,68 @@ async function handleCheckout() {
 }
 
 function addToCartAndRedirect() {
-    const variantId = matchedVariant.value?.id ?? props.produk?.id ?? 0;
-    const price = unitPrice.value;
-    const cartItem = {
-        id: `${variantId}_${currentWarna.value}_${currentUkuran.value}_custom_${Date.now()}`,
-        productId: variantId,
-        imageSrc: props.produk?.gambar ?? '/images/kaos-1.png',
-        productName: productName.value,
-        color: currentWarna.value,
-        size: currentUkuran.value,
-        unitPrice: price,
-        unitPriceText: formatRupiah(price),
-        quantity: 1,
-        desainId: savedDesainId.value,
-    };
-
     const raw = localStorage.getItem('kisanak_cart');
     const cart = raw ? JSON.parse(raw) : [];
-    cart.push(cartItem);
-    localStorage.setItem('kisanak_cart', JSON.stringify(cart));
 
+    if (hasBulkOrder.value) {
+        // ── Mode Bulk: Group by Variant ID ──
+        const validRows = bulkOrderRows.value.filter(r => r.valid);
+        const now = Date.now();
+        
+        // Map untuk mengelompokkan
+        const grouped = new Map<number, any>();
+        
+        for (const row of validRows) {
+            const vid = row.variantId;
+            if (!grouped.has(vid)) {
+                grouped.set(vid, {
+                    id: `${vid}_${row.warna}_${row.ukuran}_bulk_${now}`,
+                    productId: vid,
+                    imageSrc: props.produk?.gambar ?? '/images/kaos-1.png',
+                    productName: productName.value,
+                    color: row.warna,
+                    size: row.ukuran,
+                    unitPrice: row.hargaSatuan,
+                    unitPriceText: formatRupiah(row.hargaSatuan),
+                    quantity: 0,
+                    desainId: savedDesainId.value,
+                    isBulkItem: true,
+                    bulkData: [],
+                });
+            }
+            const group = grouped.get(vid);
+            group.quantity += row.jumlah;
+            if (row.teksKustom || savedLogoMap.value[row.logoFileName]) {
+                group.bulkData.push({
+                    teksKustom: row.teksKustom || null,
+                    logoPath: savedLogoMap.value[row.logoFileName] || null
+                });
+            }
+        }
+        
+        // Push grouped items to cart
+        for (const group of grouped.values()) {
+            cart.push(group);
+        }
+    } else {
+        // ── Mode Satuan: alur checkout biasa ──
+        const variantId = matchedVariant.value?.id ?? props.produk?.id ?? 0;
+        const price = unitPrice.value;
+        cart.push({
+            id: `${variantId}_${currentWarna.value}_${currentUkuran.value}_custom_${Date.now()}`,
+            productId: variantId,
+            imageSrc: props.produk?.gambar ?? '/images/kaos-1.png',
+            productName: productName.value,
+            color: currentWarna.value,
+            size: currentUkuran.value,
+            unitPrice: price,
+            unitPriceText: formatRupiah(price),
+            quantity: 1,
+            desainId: savedDesainId.value,
+        });
+    }
+
+    localStorage.setItem('kisanak_cart', JSON.stringify(cart));
     router.visit('/keranjang');
 }
 
@@ -774,14 +881,41 @@ watch(isDarkMode, (val) => {
                         </Button>
                     </div>
                 </div>
+
+                <!-- ─── EXCEL BULK ORDER ─── -->
+                <div v-show="activeTab === 'excel'" class="p-4">
+                    <ExcelBulkUploader
+                        :variants="props.variants ?? []"
+                        :available-warnas="availableWarnas as string[]"
+                        :available-ukurans="allAvailableUkurans"
+                        @update="handleBulkUpdate"
+                        @logo-files="handleBulkLogoFiles"
+                    />
+                </div>
             </div>
 
             <!-- Bottom Toolbar -->
             <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-2">
+                <!-- Bulk Order Summary -->
+                <div v-if="hasBulkOrder" class="bg-gray-50 dark:bg-gray-800 p-2.5 border border-gray-200 dark:border-gray-700 mb-1">
+                    <div class="flex justify-between text-[10px] text-gray-500">
+                        <span>Mode Pesanan</span>
+                        <span class="font-medium text-black dark:text-white">Bulk (Excel)</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>Total Item</span>
+                        <span class="font-medium text-black dark:text-white">{{ bulkTotalItems }} pcs</span>
+                    </div>
+                    <div class="flex justify-between text-xs mt-1">
+                        <span class="text-gray-500">Total Harga</span>
+                        <span class="font-bold text-black dark:text-white">{{ formatRupiah(bulkTotalHarga) }}</span>
+                    </div>
+                </div>
+
                 <Button variant="solid" class="w-full flex justify-center items-center gap-2 tracking-wider text-xs"
                     @click="handleCheckout" :disabled="isCheckingOut">
                     <PhShoppingCart :size="16" weight="bold" />
-                    {{ isCheckingOut ? 'Memproses...' : 'Checkout' }}
+                    {{ isCheckingOut ? 'Memproses...' : (hasBulkOrder ? `Checkout (${bulkTotalItems} pcs)` : 'Checkout') }}
                 </Button>
                 <Button variant="light" class="w-full flex justify-center items-center gap-2 text-xs"
                     @click="clearDesign">

@@ -2,6 +2,8 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Sidebar from '../../components/Sidebar.vue';
+import DesignPreviewModal from '@/components/DesignPreviewModal.vue';
+import Button from '@/components/Button.vue';
 
 type PembayaranDB = {
     id: number;
@@ -20,6 +22,7 @@ type PembayaranDB = {
             warna?: { nama: string };
             ukuran?: { nama: string };
             pivot?: { jumlah: number; subtotal: number };
+            detail_pesanan?: any[];
         }>;
     };
 };
@@ -50,6 +53,31 @@ const isDetailOpen = ref(false);
 const selectedItem = ref<any>(null);
 const isLightboxOpen = ref(false);
 const lightboxUrl = ref('');
+
+// ── Design Preview ──
+const isDesignPreviewOpen = ref(false);
+const previewDesainJson = ref<string | null>(null);
+const previewProductName = ref('');
+const previewTeksList = ref<Array<{ id: number; teks: string }>>([]);
+const previewGambarList = ref<Array<{ id: number; file: string }>>([]);
+const previewFileExcel = ref<string | null>(null);
+
+function openDesignPreview(produk: any, detailPesananList: any[]) {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produk.id);
+    if (detail?.desain?.desain_json) {
+        previewDesainJson.value = detail.desain.desain_json;
+        previewProductName.value = produk.nama ?? '';
+        previewTeksList.value = detail.desain.teks ?? [];
+        previewGambarList.value = detail.desain.gambar ?? [];
+        previewFileExcel.value = detail.desain.file_excel ?? null;
+        isDesignPreviewOpen.value = true;
+    }
+}
+
+function hasDesain(produk: any, detailPesananList: any[]): boolean {
+    const detail = detailPesananList.find((dp: any) => dp.id_produk === produk.id);
+    return !!(detail?.desain?.desain_json);
+}
 
 function openDetail(item: any) {
     selectedItem.value = item;
@@ -89,6 +117,7 @@ const items = computed(() => {
             buktiPembayaran: p.bukti_pembayaran,
             statusPembayaran: p.status as 'Belum Konfirmasi' | 'Terkonfirmasi',
             produk: produkList,
+            detailPesanan: p.pesanan?.detail_pesanan ?? [],
             pesananId: p.id_pesanan,
         };
     });
@@ -288,6 +317,12 @@ function paginationPages(): (number | string)[] {
                             </div>
                             <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}
                             </div>
+                            <Button v-if="hasDesain(prod, selectedItem?.detailPesanan ?? [])"
+                                variant="solid"
+                                class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+                                @click.stop="openDesignPreview(prod, selectedItem?.detailPesanan ?? [])">
+                                Lihat Hasil Kustom Desain
+                            </Button>
                         </div>
                         <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
                             Tidak ada produk.
@@ -323,4 +358,10 @@ function paginationPages(): (number | string)[] {
                 title="Bukti Pembayaran PDF" />
         </div>
     </div>
+
+    <!-- Modal Kustom Desain -->
+    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
+        :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
+        :file-excel="previewFileExcel"
+        @close="isDesignPreviewOpen = false" />
 </template>
