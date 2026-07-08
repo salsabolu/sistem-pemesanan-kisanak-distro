@@ -293,45 +293,85 @@ function paginationPages(): (number | string)[] {
             <!-- Detail Modal -->
             <div v-if="isDetailOpen" class="fixed inset-0 z-50 flex items-center justify-center">
                 <div class="absolute inset-0 bg-black/40" @click="closeDetail" />
-                <div class="relative bg-white text-black p-6 w-full max-w-lg mx-4"
-                    style="box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15)">
-                    <div class="flex items-start justify-between gap-4">
+                <div class="relative bg-white text-black w-full max-w-xl mx-4 flex flex-col"
+                    style="box-shadow: 0 8px 32px rgba(0,0,0,0.18); max-height: 85vh">
+
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-black/10">
                         <div>
-                            <div class="text-black text-sm font-medium uppercase">Detail Pesanan</div>
-                            <div class="mt-1 text-black/50 text-xs">ID: {{ selectedItem?.pesananId ?? '-' }}</div>
+                            <div class="text-base uppercase tracking-wide">Detail Pesanan</div>
+                            <div class="mt-0.5 text-xs text-black/40">ID Pesanan: #{{ selectedItem?.pesananId ?? '-' }}
+                            </div>
                         </div>
-                        <button type="button" class="px-4 py-2 text-sm border border-black"
+                        <button type="button"
+                            class="px-4 py-1.5 text-xs font-medium border border-black hover:bg-black hover:text-white transition-colors"
                             @click="closeDetail">Tutup</button>
                     </div>
 
-                    <div class="mt-4 divide-y divide-black/10">
-                        <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-3">
-                            <div class="text-black text-sm font-medium uppercase">{{ prod.nama ?? '-' }}</div>
-                            <div class="mt-1 text-black/50 text-xs uppercase">WARNA:
-                                {{ (prod.warna?.nama ?? '-').toUpperCase() }} / UKURAN: {{ (prod.ukuran?.nama ??
-                                    '-').toUpperCase() }}
+                    <!-- Info Pembeli -->
+                    <div class="px-6 py-3 bg-black/[0.03] border-b border-black/10 flex gap-6 text-xs">
+                        <div>
+                            <span class="text-black/40 uppercase">Pembeli</span>
+                            <div class="mt-0.5 ">{{ selectedItem?.nama ?? '-' }}</div>
+                        </div>
+                        <div>
+                            <span class="text-black/40 uppercase">WhatsApp</span>
+                            <div class="mt-0.5 ">{{ selectedItem?.whatsapp ?? '-' }}</div>
+                        </div>
+                        <div>
+                            <span class="text-black/40 uppercase">Rekening</span>
+                            <div class="mt-0.5 ">{{ selectedItem?.rekening ?? '-' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Produk List -->
+                    <div class="overflow-y-auto flex-1 divide-y divide-black/10 px-6">
+                        <div v-for="prod in (selectedItem?.produk ?? [])" :key="prod.id" class="py-4">
+                            <!-- Nama Produk -->
+                            <div class="text-sm font-medium uppercase mb-3">{{ prod.nama ?? '-' }}</div>
+
+                            <!-- Grid Label-Value -->
+                            <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                                <div class="flex items-center justify-between border-b border-black/5 pb-1.5">
+                                    <span class="text-black/40 uppercase">Warna</span>
+                                    <span class=" uppercase">{{ prod.warna?.nama ?? '-' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between border-b border-black/5 pb-1.5">
+                                    <span class="text-black/40 uppercase">Ukuran</span>
+                                    <span class=" uppercase">{{ prod.ukuran?.nama ?? '-' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between border-b border-black/5 pb-1.5">
+                                    <span class="text-black/40 uppercase">Jumlah</span>
+                                    <span class="">{{ prod.pivot?.jumlah ?? 0 }} pcs</span>
+                                </div>
+                                <div class="flex items-center justify-between border-b border-black/5 pb-1.5">
+                                    <span class="text-black/40 uppercase">Harga Satuan</span>
+                                    <span class="">{{ formatRupiah((prod.pivot?.subtotal ?? 0) / Math.max(1,
+                                        prod.pivot?.jumlah ?? 1)) }}</span>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-between pt-0.5">
+                                    <span class="text-black/40 uppercase">Subtotal</span>
+                                    <span class="font-medium text-sm">{{ formatRupiah(prod.pivot?.subtotal ?? 0)
+                                        }}</span>
+                                </div>
                             </div>
-                            <div class="mt-1 text-black text-xs">JUMLAH:
-                                {{ prod.pivot?.jumlah ?? 0 }} / HARGA:
-                                {{ formatRupiah(((prod.pivot?.subtotal ?? 0) / Math.max(1, prod.pivot?.jumlah ?? 1))) }}
-                            </div>
-                            <div class="mt-1 text-black text-xs">SUBTOTAL: {{ formatRupiah(prod.pivot?.subtotal ?? 0) }}
-                            </div>
-                            <Button v-if="hasDesain(prod, selectedItem?.detailPesanan ?? [])"
-                                variant="solid"
-                                class="mt-2 w-fit px-3 py-1.5 text-[10px] uppercase font-bold"
+
+                            <Button v-if="hasDesain(prod, selectedItem?.detailPesanan ?? [])" variant="solid"
+                                class="mt-3 w-fit px-3 py-1.5 text-[10px] uppercase"
                                 @click.stop="openDesignPreview(prod, selectedItem?.detailPesanan ?? [])">
                                 Lihat Hasil Kustom Desain
                             </Button>
                         </div>
-                        <div v-if="(selectedItem?.produk?.length ?? 0) === 0" class="py-3 text-black/50 text-sm">
+                        <div v-if="(selectedItem?.produk?.length ?? 0) === 0"
+                            class="py-6 text-black/40 text-sm text-center">
                             Tidak ada produk.
                         </div>
                     </div>
 
-                    <div class="mt-4 flex items-center justify-between text-sm">
-                        <div class="uppercase">Total:</div>
-                        <div>{{ selectedItem?.totalHarga ?? '-' }}</div>
+                    <!-- Total Footer -->
+                    <div class="px-6 py-4 border-t border-black/10 flex items-center justify-between">
+                        <span class="text-xs uppercase font-medium text-black/50">Total Pembayaran</span>
+                        <span class="text-base font-medium">{{ selectedItem?.totalHarga ?? '-' }}</span>
                     </div>
                 </div>
             </div>
@@ -360,8 +400,7 @@ function paginationPages(): (number | string)[] {
     </div>
 
     <!-- Modal Kustom Desain -->
-    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson"
-        :product-name="previewProductName" :teks-list="previewTeksList" :gambar-list="previewGambarList"
-        :file-excel="previewFileExcel"
+    <DesignPreviewModal :open="isDesignPreviewOpen" :desain-json="previewDesainJson" :product-name="previewProductName"
+        :teks-list="previewTeksList" :gambar-list="previewGambarList" :file-excel="previewFileExcel"
         @close="isDesignPreviewOpen = false" />
 </template>
